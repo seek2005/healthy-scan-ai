@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Healthy Scan AI - Professional Edition</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -73,7 +73,7 @@
 
     <nav class="fixed top-0 left-0 right-0 z-50 nav-glass py-4">
         <div class="container mx-auto max-w-6xl px-4 flex justify-between items-center">
-            <a href="#" onclick="switchTab('home')" class="flex items-center gap-3 group">
+            <a href="#" onclick="switchTab('home')" class="flex items-center gap-3 group z-50 relative">
                 <div class="bg-gradient-to-tr from-emerald-500 to-teal-400 p-2 rounded-xl shadow-md group-hover:shadow-lg transition-all">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6 text-white">
                       <path fill-rule="evenodd" d="M12.963 2.286a.75.75 0 00-1.071-.136 9.742 9.742 0 00-3.539 6.177 7.547 7.547 0 01-1.705-1.715.75.75 0 00-1.152-.082A9 9 0 1015.68 4.534a7.46 7.46 0 01-2.717-2.248zM15.75 14.25a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" clip-rule="evenodd" />
@@ -91,11 +91,20 @@
                 <button onclick="switchTab('marketing')" id="nav-marketing" class="nav-btn">Why Us?</button>
                 <button onclick="switchTab('guide')" id="nav-guide" class="nav-btn">Guide</button>
             </div>
-             <button class="md:hidden text-emerald-600 p-2 bg-emerald-50 rounded-lg">
+            
+            <button onclick="toggleMobileMenu()" class="md:hidden text-emerald-600 p-2 bg-emerald-50 rounded-lg z-50 relative active:scale-95 transition-transform">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-7 h-7">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
                 </svg>
              </button>
+        </div>
+
+        <div id="mobile-menu" class="hidden md:hidden absolute top-0 left-0 w-full bg-white/95 backdrop-blur-xl border-b border-gray-200 shadow-xl pt-24 pb-6 px-4 flex flex-col space-y-3 transition-all duration-300 z-40">
+            <button onclick="switchTab('home')" class="mobile-nav-btn w-full text-left px-4 py-3 rounded-xl font-bold text-emerald-600 bg-emerald-50">Scanner</button>
+            <button onclick="switchTab('about')" class="mobile-nav-btn w-full text-left px-4 py-3 rounded-xl font-medium text-gray-600 hover:bg-gray-50">About Me</button>
+            <button onclick="switchTab('prototype')" class="mobile-nav-btn w-full text-left px-4 py-3 rounded-xl font-medium text-gray-600 hover:bg-gray-50">Features</button>
+            <button onclick="switchTab('marketing')" class="mobile-nav-btn w-full text-left px-4 py-3 rounded-xl font-medium text-gray-600 hover:bg-gray-50">Why Us?</button>
+            <button onclick="switchTab('guide')" class="mobile-nav-btn w-full text-left px-4 py-3 rounded-xl font-medium text-gray-600 hover:bg-gray-50">Guide</button>
         </div>
     </nav>
     
@@ -109,7 +118,7 @@
                 <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 via-teal-500 to-cyan-600">Live Better.</span>
             </h1>
             <p class="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed font-medium">
-                Turn confusing nutrition labels into clear, actionable health insights instantly with the power of AI.
+                Turn confusing nutrition labels into clear, actionable health insights instantly.
             </p>
         </header>
 
@@ -122,7 +131,8 @@
                         Scan Label
                     </h2>
                     
-                    <input type="file" id="imageUpload" accept="image/*" class="hidden" onchange="previewImage(event)">
+                    <input type="file" id="imageUpload" accept="image/*" capture="environment" class="hidden" onchange="previewImage(event)">
+                    
                     <label for="imageUpload" class="custom-file-upload block text-center rounded-[2rem] p-12 cursor-pointer group bg-white/50 hover:bg-white/80">
                         <div class="transition-transform duration-300 group-hover:-translate-y-3">
                             <div class="w-20 h-20 bg-emerald-50 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:bg-emerald-100 group-hover:shadow-md transition-all">
@@ -130,8 +140,8 @@
                                   <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
                                 </svg>
                             </div>
-                            <p class="font-bold text-lg text-gray-800 mb-2">Drop image here</p>
-                            <p class="text-sm text-gray-500">or click to browse files</p>
+                            <p class="font-bold text-lg text-gray-800 mb-2">Tap to Scan</p>
+                            <p class="text-sm text-gray-500">Camera or File</p>
                         </div>
                     </label>
 
@@ -166,7 +176,7 @@
                         <p class="text-xl text-gray-500">Upload a nutrition label to unlock detailed health insights.</p>
                     </div>
 
-                    <div id="resultsContainer" class="hidden space-y-8">
+                    <div id="resultsContainer" class="hidden flex flex-col space-y-8">
                         
                         <div class="glass-panel rounded-[2rem] p-8 md:p-10 bg-white/90 shadow-xl shadow-emerald-50/50 border-2 border-white">
                             <div class="flex items-center gap-4 mb-6">
@@ -177,7 +187,7 @@
                                           <path fill-rule="evenodd" d="M9 4.5a.75.75 0 01.721.544l.813 2.846a3.75 3.75 0 002.576 2.576l2.846.813a.75.75 0 010 1.442l-2.846.813a3.75 3.75 0 00-2.576 2.576l-.813 2.846a.75.75 0 01-1.442 0l-.813-2.846a3.75 3.75 0 00-2.576-2.576l-2.846-.813a.75.75 0 010-1.442l2.846-.813A3.75 3.75 0 007.466 7.89l.813-2.846A.75.75 0 019 4.5zM18 1.5a.75.75 0 01.728.568l.258 1.036c.236.94.97 1.674 1.91 1.91l1.036.258a.75.75 0 010 1.456l-1.036.258c-.94.236-1.674.97-1.91 1.91l-.258 1.036a.75.75 0 01-1.456 0l-.258-1.036a2.625 2.625 0 00-1.91-1.91l-1.036-.258a.75.75 0 010-1.456l1.036-.258a2.625 2.625 0 001.91-1.91l.258-1.036A.75.75 0 0118 1.5zM16.5 15a.75.75 0 01.712.513l.394 1.183c.15.447.5.799.948.948l1.183.394a.75.75 0 010 1.422l-1.183.394c-.447.15-.799.5-.948.948l-.394 1.183a.75.75 0 01-1.422 0l-.394-1.183a1.5 1.5 0 00-.948-.948l-1.183-.394a.75.75 0 010-1.422l1.183-.394c.447-.15.799-.5.948-.948l.394-1.183A.75.75 0 0116.5 15z" clip-rule="evenodd" />
                                         </svg>
                                     </div>
-                                    AI Analysis Summary
+                                    Analysis Summary
                                 </h3>
                             </div>
                             <div id="healthyScanSummary" class="text-gray-700 leading-relaxed text-xl pl-2"></div>
@@ -422,6 +432,12 @@
     <script>
         const API_KEY = 'AIzaSyCpWOqJgWYtXAKtMxPqTKWjS6WRLKvP0cI'; 
         const MODEL_NAME = 'gemini-2.0-flash';
+        
+        // Función para el menú móvil
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+        }
 
         function switchTab(tabName) {
             const contents = document.querySelectorAll('.tab-content');
@@ -431,12 +447,21 @@
             navButtons.forEach(btn => {
                 btn.classList.remove('active-nav');
             });
+            
+            // Reiniciar estilos del menú móvil
+            document.querySelectorAll('.mobile-nav-btn').forEach(btn => {
+                btn.classList.remove('bg-emerald-50', 'text-emerald-600');
+                btn.classList.add('text-gray-600');
+            });
 
             const tab = document.getElementById('tab-' + tabName);
             if (tab) tab.classList.remove('hidden');
 
             const btn = document.getElementById('nav-' + tabName);
             if (btn) btn.classList.add('active-nav');
+
+            // Ocultar menú móvil tras hacer clic
+            document.getElementById('mobile-menu').classList.add('hidden');
 
             // Ocultar header en otras pestañas
             const header = document.getElementById('main-header');
@@ -445,7 +470,7 @@
             } else {
                 header.classList.add('hidden');
             }
-            // Scroll top
+            // Scroll al inicio
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
@@ -473,7 +498,7 @@
                     scanButton.classList.add('bg-gradient-to-r', 'from-emerald-500', 'to-teal-500', 'text-white', 'shadow-xl');
                     scanButton.innerHTML = `
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6 animate-pulse">
-                          <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 00-1.423 1.423z" />
                         </svg>
                         Start Analysis
                     `;
@@ -508,7 +533,7 @@
                             { 
                                 text: `You are a nutritionist AI. Analyze this nutrition label. 
                                 1. Identify product. 2. Summarize health value accurately. 3. Analyze Sugar, Sodium, Sat Fat for Children (4-8), Adults (19-50), Seniors (51+). Mark as 'Recommended', 'High', or 'EXCESSIVE' based on standard guidelines. 4. Suggest REAL US market alternative product. 
-                                CRITICAL: Output ONLY raw JSON. No intro text.
+                                CRITICAL: Output ONLY raw JSON. Do not include markdown formatting like \`\`\`json. No intro or outro text.
                                 { 
                                   "summary": "string (use **bold** for emphasis)", 
                                   "portion_analysis": [
@@ -533,15 +558,25 @@
                 if (!response.ok) throw new Error("API connection failed. Please try again.");
                 const data = await response.json();
                 
+                // === SOLUCIÓN ROBUSTA PARA EL ERROR DE JSON ===
                 const textResponse = data.candidates[0].content.parts[0].text;
-                let cleanJson = textResponse.replace(/```json/g, '').replace(/```/g, '').trim();
-                const firstBrace = cleanJson.indexOf('{');
-                const lastBrace = cleanJson.lastIndexOf('}');
-                if (firstBrace !== -1 && lastBrace !== -1) cleanJson = cleanJson.substring(firstBrace, lastBrace + 1);
                 
-                const analysisResult = JSON.parse(cleanJson);
-                displayResults(analysisResult);
-                statusMessage.classList.add('hidden');
+                // Usamos Expresión Regular para encontrar el objeto JSON {...}
+                // Esto ignora cualquier texto que esté fuera de las llaves principales.
+                const jsonMatch = textResponse.match(/{[\s\S]*}/);
+                
+                if (jsonMatch) {
+                    let cleanJson = jsonMatch[0];
+                    // Limpieza adicional por si acaso quedan restos de markdown dentro
+                    cleanJson = cleanJson.replace(/```json/g, '').replace(/```/g, '');
+                    
+                    const analysisResult = JSON.parse(cleanJson);
+                    displayResults(analysisResult);
+                    statusMessage.classList.add('hidden');
+                } else {
+                    throw new Error("AI response was not valid JSON. Try again.");
+                }
+                // ===============================================
 
             } catch (error) {
                 console.error(error);
@@ -550,7 +585,7 @@
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 text-red-600">
                       <path fill-rule="evenodd" d="M9.401 3.003c1.155-2 4.043-2 5.197 0l7.355 12.748c1.154 2-.29 4.5-2.599 4.5H4.645c-2.309 0-3.752-2.5-2.598-4.5L9.4 3.003zM12 8.25a.75.75 0 01.75.75v3.75a.75.75 0 01-1.5 0V9a.75.75 0 01.75-.75zm0 8.25a.75.75 0 100-1.5.75.75 0 000 1.5z" clip-rule="evenodd" />
                     </svg>
-                    <strong>Error:</strong> ${error.message || "Analysis failed."} Try another image.
+                    <strong>Error:</strong> ${error.message || "Analysis failed."}
                 </div>`;
                 statusMessage.classList.remove('bg-blue-50/80', 'text-blue-700', 'border-blue-200');
                 statusMessage.classList.add('bg-red-50/80', 'text-red-700', 'border-red-200');
@@ -643,7 +678,8 @@
                 `;
                 document.getElementById('altContainer').innerHTML = altHTML;
             }
-            resultsContainer.classList.remove('hidden');
+            resultsContainer.classList.remove('hidden', 'flex');
+            resultsContainer.classList.add('flex');
             // Scroll to results
             resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
