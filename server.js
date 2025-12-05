@@ -67,7 +67,10 @@ router.post('/analyze-image', async (req, res) => {
         const prompt = `You are a nutritionist AI. Analyze this nutrition label. 
         1. Identify product. 
         2. Summarize health value. 
-        3. EXTRACT the exact amount of Sugar (in grams), Sodium (in mg), and Saturated Fat (in grams) per serving. If not found, estimate or set to 0.
+        3. EXTRACT the exact nutrient values. Look for "Total Sugars" (or "Sugars" if Total not present), "Sodium", and "Saturated Fat". 
+           - IMPORTANT: If the package is a single-serving container (e.g., "Serving size 1 bottle", "1 can", "1 package"), use the values for the ENTIRE container.
+           - If there are two columns (e.g., "Per Serving" and "Per Container"), use "Per Container".
+           - Output raw numbers (e.g., 38 not 38g).
         4. List ALL ingredients found in the product. Mark if they are generally considered harmful/controversial (e.g., high fructose corn syrup, red 40). Provide a very brief description (max 10 words) of what it is.
         5. Suggest REAL US market alternative product. 
         CRITICAL: Output ONLY raw JSON. No intro text.
