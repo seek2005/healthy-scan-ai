@@ -6,6 +6,7 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 dotenv.config();
 
 const app = express();
+const router = express.Router(); // Create a router
 const port = process.env.PORT || 3000;
 
 // Middleware
@@ -17,6 +18,7 @@ app.use(express.static('.')); // Serve static files from current directory
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 // Note: Using gemini-2.0-flash as it is available for this API key
 const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+
 // Helper to clean JSON response
 function cleanJSON(text) {
     const match = text.match(/\{[\s\S]*\}/);
@@ -24,8 +26,8 @@ function cleanJSON(text) {
     return match[0].replace(/```json/g, '').replace(/```/g, '');
 }
 
-// Endpoint: Analyze Image
-app.post('/api/analyze-image', async (req, res) => {
+// Routes defined on the router (no /api prefix here)
+router.post('/analyze-image', async (req, res) => {
     try {
         const { image, mimeType } = req.body;
         if (!image) return res.status(400).json({ error: 'No image provided' });
@@ -85,8 +87,7 @@ app.post('/api/analyze-image', async (req, res) => {
     }
 });
 
-// Endpoint: Analyze Barcode
-app.post('/api/analyze-barcode', async (req, res) => {
+router.post('/analyze-barcode', async (req, res) => {
     try {
         const { barcode } = req.body;
         if (!barcode) return res.status(400).json({ error: 'No barcode provided' });
@@ -163,6 +164,11 @@ app.post('/api/analyze-barcode', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+
+// Mount the router at /api for local dev
+app.use('/api', router);
+// Mount at / for Netlify Functions (which might strip the prefix)
+app.use('/', router);
 
 // Export app for Netlify Functions
 module.exports = app;
