@@ -26,6 +26,38 @@ function cleanJSON(text) {
     return match[0].replace(/```json/g, '').replace(/```/g, '');
 }
 
+// --- Nutrient Standards & Calculation Logic ---
+const DAILY_LIMITS = {
+    "Children (4-8)": { sugar: 25, sodium: 1200, fat: 10 }, // g, mg, g
+    "Adults (19-50)": { sugar: 50, sodium: 2300, fat: 20 },
+    "Seniors (51+)": { sugar: 30, sodium: 1500, fat: 15 }
+};
+
+function calculatePortionAnalysis(sugarG, sodiumMg, satFatG) {
+    // Default to 0 if null/undefined
+    const s = sugarG || 0;
+    const sod = sodiumMg || 0;
+    const f = satFatG || 0;
+
+    return Object.entries(DAILY_LIMITS).map(([stage, limits]) => {
+        const sugarPct = Math.round((s / limits.sugar) * 100);
+        const sodiumPct = Math.round((sod / limits.sodium) * 100);
+        const fatPct = Math.round((f / limits.fat) * 100);
+
+        const getRec = (pct) => pct > 100 ? "EXCESSIVE" : pct > 50 ? "High" : "Recommended";
+
+        return {
+            stage: stage,
+            sugar_recommendation: getRec(sugarPct),
+            sugar_percentage: `${sugarPct}%`, // Kept for reference, but frontend can ignore
+            sodium_recommendation: getRec(sodiumPct),
+            sodium_percentage: `${sodiumPct}%`,
+            fat_recommendation: getRec(fatPct),
+            fat_percentage: `${fatPct}%`
+        };
+    });
+}
+
 // Routes defined on the router (no /api prefix here)
 router.post('/analyze-image', async (req, res) => {
     try {
@@ -36,8 +68,12 @@ router.post('/analyze-image', async (req, res) => {
         1. Identify product. 
         2. Summarize health value. 
         3. Analyze the product for "Positives" (Health benefits, good nutrients) and "Negatives" (High sugar, additives, processing).
-        4. List ALL ingredients found in the product. Mark if they are generally considered harmful/controversial.
-        5. Suggest REAL US market alternative product. 
+        4. EXTRACT the exact nutrient values:
+           - **SUGAR**: Look for "Total Sugars". If multiple columns, use LARGEST. (e.g. 38).
+           - **SODIUM**: Look for "Sodium". Use LARGEST.
+           - **SAT FAT**: Look for "Saturated Fat". Use LARGEST.
+        5. List ALL ingredients found. Provide a short description (max 10 words) for EACH. Mark if harmful.
+        6. Suggest REAL US market alternative product. 
         CRITICAL: Output ONLY raw JSON in English. No intro text.
         { 
           "summary": "string (use **bold** for emphasis)", 
@@ -45,6 +81,7 @@ router.post('/analyze-image', async (req, res) => {
               "negatives": [ { "title": "string (e.g. High Sugar)", "value": "string (e.g. 38g)", "description": "string (short explanation)" } ],
               "positives": [ { "title": "string (e.g. Protein)", "value": "string (e.g. 10g)", "description": "string" } ]
           },
+          "extracted_nutrients": { "sugar_g": number, "sodium_mg": number, "sat_fat_g": number },
           "allergens": [
             { "name": "string", "severity": "string (Low/Medium/High)", "description": "string" }
           ],
@@ -65,6 +102,16 @@ router.post('/analyze-image', async (req, res) => {
         if (!cleaned) throw new Error("Failed to parse JSON from AI response");
 
         const data = JSON.parse(cleaned);
+
+        // Calculate portion analysis programmatically
+        if (data.extracted_nutrients) {
+            data.portion_analysis = calculatePortionAnalysis(
+                data.extracted_nutrients.sugar_g,
+                data.extracted_nutrients.sodium_mg,
+                data.extracted_nutrients.sat_fat_g
+            );
+        }
+
         res.json(data);
 
     } catch (error) {
@@ -104,8 +151,9 @@ router.post('/analyze-barcode', async (req, res) => {
         1. Identify product. 
         2. Summarize health value based on the ingredients and nutriments provided. 
         3. Analyze the product for "Positives" (Health benefits, good nutrients) and "Negatives" (High sugar, additives, processing).
-        4. List ALL ingredients found in the product. Mark if they are generally considered harmful/controversial.
-        5. Suggest REAL US market alternative product. 
+        4. EXTRACT the exact nutrient values from context (sugar, sodium, sat fat).
+        5. List ALL ingredients found. Provide a short description (max 10 words) for EACH.
+        6. Suggest REAL US market alternative product. 
         CRITICAL: Output ONLY raw JSON in English. No intro text.
         { 
           "summary": "string (use **bold** for emphasis)", 
@@ -113,6 +161,7 @@ router.post('/analyze-barcode', async (req, res) => {
               "negatives": [ { "title": "string (e.g. High Sugar)", "value": "string (e.g. 38g)", "description": "string (short explanation)" } ],
               "positives": [ { "title": "string (e.g. Protein)", "value": "string (e.g. 10g)", "description": "string" } ]
           },
+          "extracted_nutrients": { "sugar_g": number, "sodium_mg": number, "sat_fat_g": number },
           "allergens": [
             { "name": "string", "severity": "string (Low/Medium/High)", "description": "string" }
           ],
@@ -128,6 +177,15 @@ router.post('/analyze-barcode', async (req, res) => {
         if (!cleaned) throw new Error("Failed to parse JSON from AI response");
 
         const data = JSON.parse(cleaned);
+
+        if (data.extracted_nutrients) {
+            data.portion_analysis = calculatePortionAnalysis(
+                data.extracted_nutrients.sugar_g,
+                data.extracted_nutrients.sodium_mg,
+                data.extracted_nutrients.sat_fat_g
+            );
+        }
+
         res.json(data);
 
     } catch (error) {
