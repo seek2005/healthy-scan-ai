@@ -90,6 +90,10 @@ function resetUI() {
 async function startScan() {
     if (!uploadedImageBase64) return;
 
+    // Capture data before resetUI clears the global variable
+    const imageData = uploadedImageBase64;
+    const fileType = uploadedFileType;
+
     resetUI();
     showStatus("Analyzing image with AI...");
 
@@ -101,8 +105,8 @@ async function startScan() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                image: uploadedImageBase64,
-                mimeType: uploadedFileType
+                image: imageData,
+                mimeType: fileType
             })
         });
 
