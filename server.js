@@ -69,9 +69,9 @@ router.post('/analyze-image', async (req, res) => {
         2. Summarize health value. 
         3. Analyze the product for "Positives" (Health benefits, good nutrients) and "Negatives" (High sugar, additives, processing).
         4. EXTRACT the exact nutrient values:
-           - **SUGAR**: Look for "Total Sugars". If multiple columns, use LARGEST. (e.g. 38).
-           - **SODIUM**: Look for "Sodium". Use LARGEST.
-           - **SAT FAT**: Look for "Saturated Fat". Use LARGEST.
+           - **SUGAR**: Look for "Total Sugars". ALWAYS use the "Per Container" or "Per Package" column if available. If not, use the LARGEST number found. (e.g. if 20g and 46g, use 46).
+           - **SODIUM**: Look for "Sodium". Use "Per Container" or LARGEST value.
+           - **SAT FAT**: Look for "Saturated Fat". Use "Per Container" or LARGEST value.
         5. List ALL ingredients found. Provide a short description (max 10 words) for EACH. Mark if harmful.
         6. Suggest REAL US market alternative product. 
         CRITICAL: Output ONLY raw JSON in English. No intro text.
@@ -97,11 +97,28 @@ router.post('/analyze-image', async (req, res) => {
 
         const response = await result.response;
         const text = response.text();
-        const cleaned = cleanJSON(text);
+        console.log("--- DEBUG: Raw AI Response ---");
+        console.log(text);
+        console.log("------------------------------");
 
+        const cleaned = cleanJSON(text);
         if (!cleaned) throw new Error("Failed to parse JSON from AI response");
 
         const data = JSON.parse(cleaned);
+
+        // Robust parsing helper for potential string values like "20g"
+        const parseNutrient = (val) => {
+            if (typeof val === 'number') return val;
+            if (typeof val === 'string') return parseFloat(val.replace(/[^0-9.]/g, '')) || 0;
+            return 0;
+        };
+
+        // Ensure extracted_nutrients exists and has valid numbers
+        if (data.extracted_nutrients) {
+            data.extracted_nutrients.sugar_g = parseNutrient(data.extracted_nutrients.sugar_g);
+            data.extracted_nutrients.sodium_mg = parseNutrient(data.extracted_nutrients.sodium_mg);
+            data.extracted_nutrients.sat_fat_g = parseNutrient(data.extracted_nutrients.sat_fat_g);
+        }
 
         // Calculate portion analysis programmatically
         if (data.extracted_nutrients) {
@@ -172,13 +189,28 @@ router.post('/analyze-barcode', async (req, res) => {
         const result = await model.generateContent(prompt);
         const response = await result.response;
         const text = response.text();
-        const cleaned = cleanJSON(text);
 
+        console.log("--- DEBUG: Barcode AI Response ---");
+        console.log(text);
+        console.log("----------------------------------");
+
+        const cleaned = cleanJSON(text);
         if (!cleaned) throw new Error("Failed to parse JSON from AI response");
 
         const data = JSON.parse(cleaned);
 
+        // Robust parsing helper
+        const parseNutrient = (val) => {
+            if (typeof val === 'number') return val;
+            if (typeof val === 'string') return parseFloat(val.replace(/[^0-9.]/g, '')) || 0;
+            return 0;
+        };
+
         if (data.extracted_nutrients) {
+            data.extracted_nutrients.sugar_g = parseNutrient(data.extracted_nutrients.sugar_g);
+            data.extracted_nutrients.sodium_mg = parseNutrient(data.extracted_nutrients.sodium_mg);
+            data.extracted_nutrients.sat_fat_g = parseNutrient(data.extracted_nutrients.sat_fat_g);
+
             data.portion_analysis = calculatePortionAnalysis(
                 data.extracted_nutrients.sugar_g,
                 data.extracted_nutrients.sodium_mg,
