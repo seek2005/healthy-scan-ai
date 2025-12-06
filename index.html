@@ -270,9 +270,7 @@
 
                 </div> <!-- End Results Container -->
             </main>
-            <div class="mt-12 py-6 text-center border-t border-gray-200/60">
-                <p class="text-sm text-gray-400 font-medium">© HealthyScanAI by Josue Torres</p>
-            </div>
+
         </section>
 
         <section id="tab-about"
@@ -353,16 +351,15 @@
                     </div>
                 </div>
             </div>
-            <div class="mt-12 py-6 text-center border-t border-gray-200/60">
-                <p class="text-sm text-gray-400 font-medium">© HealthyScanAI by Josue Torres</p>
-            </div>
+
         </section>
 
         <section id="tab-prototype" class="tab-content hidden max-w-6xl mx-auto">
             <h2 class="text-5xl font-extrabold text-gray-900 text-center mb-16">Prototype Capabilities</h2>
             <div class="grid md:grid-cols-2 gap-10">
+                <!-- Card 1 -->
                 <div
-                    class="glass-panel p-10 rounded-[2.5rem] bg-white/70 hover:bg-white/90 transition-all shadow-xl hover:shadow-2xl hover:-translate-y-2 border-2 border-white group">
+                    class="bg-white p-10 rounded-[2.5rem] shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 border border-gray-100 group">
                     <div
                         class="w-16 h-16 bg-gradient-to-tr from-blue-400 to-indigo-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg group-hover:scale-110 transition-transform">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
@@ -378,109 +375,192 @@
                         images. The system automatically infers categories (e.g., soda, cereal, yogurt) from visual data
                         without manual input.</p>
                 </div>
+
+                <!-- Card 2 -->
                 <div
-                    class="glass-panel p-10 rounded-[2.5rem] bg-white/70 hover:bg-white/90 transition-all shadow-xl hover:shadow-2xl hover:-translate-y-2 border-2 border-white group">
+                    class="bg-white p-10 rounded-[2.5rem] shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 border border-gray-100 group">
                     <div
                         class="w-16 h-16 bg-gradient-to-tr from-emerald-400 to-teal-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg group-hover:scale-110 transition-transform">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
                             stroke="currentColor" class="w-9 h-9 text-white">
                             <path stroke-linecap="round" stroke-linejoin="round"
-                                d="M9 12.75l3 3m0 0l3-3m-3 3v-7.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
                         </svg>
                     </div>
-                    <h3 class="text-2xl font-bold text-gray-900 mb-3">Live Nutrient Parsing</h3>
-                    <p class="text-gray-600 text-lg leading-relaxed">Extracts key data points (Sugar, Sodium, Sat Fat)
-                        in real-time and provides a detailed breakdown tailored to different age groups.</p>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-3">Health Score Engine</h3>
+                    <p class="text-gray-600 text-lg leading-relaxed">A proprietary logic that penalizes negative
+                        nutrients (added sugars, sodium, saturated fats) while rewarding positive ones (fiber, protein)
+                        to generate an unbiased score.</p>
+                </div>
+
+                <!-- Card 3 -->
+                <div
+                    class="bg-white p-10 rounded-[2.5rem] shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 border border-gray-100 group">
+                    <div
+                        class="w-16 h-16 bg-gradient-to-tr from-purple-400 to-fuchsia-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg group-hover:scale-110 transition-transform">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+                            stroke="currentColor" class="w-9 h-9 text-white">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-3">Age-Specific Analysis</h3>
+                    <p class="text-gray-600 text-lg leading-relaxed">Generates breakdown tables specifically tailored
+                        for three distinct groups: <strong>Children (4-8)</strong>, <strong>Adults (19-50)</strong>, and
+                        <strong>Seniors (51+)</strong>.
+                    </p>
+                </div>
+
+                <!-- Card 4 -->
+                <div
+                    class="bg-white p-10 rounded-[2.5rem] shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 border border-gray-100 group">
+                    <div
+                        class="w-16 h-16 bg-gradient-to-tr from-orange-400 to-amber-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg group-hover:scale-110 transition-transform">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+                            stroke="currentColor" class="w-9 h-9 text-white">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" />
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-3">Smart Alternatives</h3>
+                    <p class="text-gray-600 text-lg leading-relaxed">Automatically identifies and suggests the
+                        healthiest product available within the same category to offer an immediate actionable swap.</p>
                 </div>
             </div>
         </section>
 
-        <section id="tab-marketing" class="tab-content hidden max-w-6xl mx-auto">
-            <div class="text-center mb-16">
-                <h2 class="text-5xl font-extrabold text-gray-900 mb-6">Why HealthyScan AI?</h2>
-                <p class="text-xl text-gray-600 max-w-3xl mx-auto">We bridge the gap between complex nutritional data
-                    and daily decision making.</p>
-            </div>
-            <div class="grid md:grid-cols-3 gap-8">
+        <section id="tab-marketing" class="tab-content hidden max-w-7xl mx-auto">
+            <h2 class="text-5xl font-extrabold text-gray-900 text-center mb-16">Why Families Trust Us</h2>
+            <div class="grid md:grid-cols-4 gap-6">
+                <!-- Card 1 -->
                 <div
-                    class="glass-panel p-8 rounded-[2rem] text-center hover:-translate-y-2 transition-transform duration-300 border-2 border-white shadow-lg">
-                    <div class="w-14 h-14 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
-                            stroke="currentColor" class="w-7 h-7 text-emerald-600">
+                    class="bg-emerald-50/50 p-8 rounded-[2rem] hover:bg-emerald-100/50 hover:scale-105 transition-all duration-300 border border-emerald-100/50">
+                    <div
+                        class="w-14 h-14 bg-emerald-100 border border-emerald-200 rounded-2xl flex items-center justify-center mb-6 text-emerald-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                            stroke="currentColor" class="w-8 h-8">
                             <path stroke-linecap="round" stroke-linejoin="round"
-                                d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
                         </svg>
                     </div>
-                    <h3 class="text-xl font-bold text-gray-900 mb-3">Save Time</h3>
-                    <p class="text-gray-600">Instant analysis means no more standing in aisles reading fine print.</p>
+                    <h3 class="text-xl font-bold text-emerald-900 mb-3">Scan, don’t guess</h3>
+                    <p class="text-emerald-800/80 leading-relaxed">Turn a confusing nutrition label into a simple, clear
+                        health summary in seconds.</p>
                 </div>
+
+                <!-- Card 2 -->
                 <div
-                    class="glass-panel p-8 rounded-[2rem] text-center hover:-translate-y-2 transition-transform duration-300 border-2 border-white shadow-lg">
-                    <div class="w-14 h-14 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
-                            stroke="currentColor" class="w-7 h-7 text-teal-600">
-                            <path stroke-linecap="round" stroke-linejoin="round"
-                                d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" />
-                        </svg>
-                    </div>
-                    <h3 class="text-xl font-bold text-gray-900 mb-3">Trusted Data</h3>
-                    <p class="text-gray-600">Powered by advanced AI that interprets FDA-standard labels accurately.</p>
-                </div>
-                <div
-                    class="glass-panel p-8 rounded-[2rem] text-center hover:-translate-y-2 transition-transform duration-300 border-2 border-white shadow-lg">
-                    <div class="w-14 h-14 bg-cyan-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
-                            stroke="currentColor" class="w-7 h-7 text-cyan-600">
+                    class="bg-blue-50/50 p-8 rounded-[2rem] hover:bg-blue-100/50 hover:scale-105 transition-all duration-300 border border-blue-100/50">
+                    <div
+                        class="w-14 h-14 bg-blue-100 border border-blue-200 rounded-2xl flex items-center justify-center mb-6 text-blue-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                            stroke="currentColor" class="w-8 h-8">
                             <path stroke-linecap="round" stroke-linejoin="round"
                                 d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
                         </svg>
                     </div>
-                    <h3 class="text-xl font-bold text-gray-900 mb-3">Family Focused</h3>
-                    <p class="text-gray-600">Tailored insights for every member of your family, from kids to seniors.
-                    </p>
+                    <h3 class="text-xl font-bold text-blue-900 mb-3">Age-aware analysis</h3>
+                    <p class="text-blue-800/80 leading-relaxed">See instantly whether a product is suitable for
+                        children, adults, or seniors.</p>
+                </div>
+
+                <!-- Card 3 -->
+                <div
+                    class="bg-purple-50/50 p-8 rounded-[2rem] hover:bg-purple-100/50 hover:scale-105 transition-all duration-300 border border-purple-100/50">
+                    <div
+                        class="w-14 h-14 bg-purple-100 border border-purple-200 rounded-2xl flex items-center justify-center mb-6 text-purple-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                            stroke="currentColor" class="w-8 h-8">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-purple-900 mb-3">Smarter swaps</h3>
+                    <p class="text-purple-800/80 leading-relaxed">Get a healthier alternative within the same category,
+                        not just generic advice.</p>
+                </div>
+
+                <!-- Card 4 -->
+                <div
+                    class="bg-orange-50/50 p-8 rounded-[2rem] hover:bg-orange-100/50 hover:scale-105 transition-all duration-300 border border-orange-100/50">
+                    <div
+                        class="w-14 h-14 bg-orange-100 border border-orange-200 rounded-2xl flex items-center justify-center mb-6 text-orange-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                            stroke="currentColor" class="w-8 h-8">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-orange-900 mb-3">Built for real life</h3>
+                    <p class="text-orange-800/80 leading-relaxed">Focused on fast, visual feedback for parents who shop
+                        on the go.</p>
                 </div>
             </div>
         </section>
 
         <section id="tab-guide" class="tab-content hidden max-w-4xl mx-auto">
-            <div class="glass-panel p-12 rounded-[3rem] bg-white/90 shadow-2xl border-2 border-white">
-                <h2 class="text-4xl font-extrabold text-gray-900 mb-10 text-center">How to Use</h2>
-                <div class="space-y-12">
-                    <div class="flex gap-6 items-start">
-                        <div
-                            class="w-12 h-12 bg-emerald-600 text-white rounded-2xl flex items-center justify-center font-bold text-xl shadow-lg shrink-0">
-                            1</div>
-                        <div>
-                            <h3 class="text-2xl font-bold text-gray-900 mb-2">Tap "Scan Label"</h3>
-                            <p class="text-gray-600 text-lg">Click the large button on the homepage. You can choose to
-                                take a new photo or upload one from your gallery.</p>
-                        </div>
+            <h2 class="text-4xl font-extrabold text-gray-900 mb-10 text-center">User Guide</h2>
+            <div class="space-y-6">
+                <!-- Step 1 -->
+                <div class="bg-white p-8 rounded-[2rem] flex items-start gap-6 shadow-sm border border-gray-100">
+                    <div
+                        class="w-12 h-12 bg-emerald-500 text-white rounded-2xl flex items-center justify-center font-bold text-xl shadow-lg shrink-0">
+                        1</div>
+                    <div>
+                        <h3 class="text-2xl font-bold text-gray-900 mb-2">Snap or Upload</h3>
+                        <p class="text-gray-600 text-lg">Take a clear photo of the product’s Nutrition Facts label or
+                            barcode with your phone.</p>
                     </div>
-                    <div class="flex gap-6 items-start">
-                        <div
-                            class="w-12 h-12 bg-teal-500 text-white rounded-2xl flex items-center justify-center font-bold text-xl shadow-lg shrink-0">
-                            2</div>
-                        <div>
-                            <h3 class="text-2xl font-bold text-gray-900 mb-2">Capture the Facts</h3>
-                            <p class="text-gray-600 text-lg">Ensure the "Nutrition Facts" table is clearly visible and
-                                well-lit. Avoid blur for best accuracy.</p>
-                        </div>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="bg-white p-8 rounded-[2rem] flex items-start gap-6 shadow-sm border border-gray-100">
+                    <div
+                        class="w-12 h-12 bg-emerald-500 text-white rounded-2xl flex items-center justify-center font-bold text-xl shadow-lg shrink-0">
+                        2</div>
+                    <div>
+                        <h3 class="text-2xl font-bold text-gray-900 mb-2">Scan</h3>
+                        <p class="text-gray-600 text-lg">Click the analyze button.</p>
                     </div>
-                    <div class="flex gap-6 items-start">
-                        <div
-                            class="w-12 h-12 bg-cyan-500 text-white rounded-2xl flex items-center justify-center font-bold text-xl shadow-lg shrink-0">
-                            3</div>
-                        <div>
-                            <h3 class="text-2xl font-bold text-gray-900 mb-2">Get Instant Insights</h3>
-                            <p class="text-gray-600 text-lg">Within seconds, view a color-coded breakdown of sugar,
-                                sodium, and fat levels tailored for different age groups.</p>
-                        </div>
+                </div>
+
+                <!-- Step 3 -->
+                <div class="bg-white p-8 rounded-[2rem] flex items-start gap-6 shadow-sm border border-gray-100">
+                    <div
+                        class="w-12 h-12 bg-emerald-500 text-white rounded-2xl flex items-center justify-center font-bold text-xl shadow-lg shrink-0">
+                        3</div>
+                    <div>
+                        <h3 class="text-2xl font-bold text-gray-900 mb-2">Review Insights</h3>
+                        <p class="text-gray-600 text-lg">Read the AI summary, check the table for your age group, and
+                            click the alternative to buy a healthier option.</p>
                     </div>
+                </div>
+
+                <!-- Disclaimer -->
+                <div class="mt-8 p-6 bg-red-50 rounded-2xl border border-red-100 flex gap-4">
+                    <div class="shrink-0">
+                        <div
+                            class="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center text-white font-bold">
+                            !</div>
+                    </div>
+                    <p class="text-red-800 font-medium text-sm leading-relaxed">
+                        <strong class="block text-red-900 mb-1">Important Disclaimer:</strong>
+                        This application is a student prototype for educational and demonstration purposes only. The
+                        analysis is generated by AI and should not be considered medical or dietary advice. Always
+                        consult a qualified healthcare professional for health decisions.
+                    </p>
                 </div>
             </div>
         </section>
 
     </div>
+
+    <!-- Universal Footer -->
+    <div class="container mx-auto px-4 py-8 text-center mt-12">
+        <p class="text-sm text-gray-400 font-medium">© HealthyScanAI by Josue Torres</p>
+    </div>
+
+
 
     <script src="script.js?v=2.2"></script>
 </body>
