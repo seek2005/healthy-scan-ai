@@ -31,6 +31,7 @@ function switchTab(tabName) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+// Update preview logic to switch view states
 function previewImage(event) {
     const file = event.target.files[0];
     if (file) {
@@ -38,13 +39,21 @@ function previewImage(event) {
         const reader = new FileReader();
         reader.onload = (e) => {
             imagePreview.src = e.target.result;
-            imagePreview.parentElement.classList.remove('hidden');
-            document.querySelector('#imageUpload').nextElementSibling.querySelector('div').classList.add('hidden');
-            scanButton.disabled = false;
-            scanButton.classList.remove('bg-gray-200', 'text-gray-400');
-            scanButton.classList.add('bg-gradient-to-r', 'from-emerald-500', 'to-teal-500', 'text-white', 'shadow-xl');
-            scanButton.innerHTML = `Analyze Image`;
             uploadedImageBase64 = e.target.result.split(',')[1];
+
+            // Toggle Views: Search -> Preview
+            document.getElementById('defaultView').classList.add('hidden');
+            document.getElementById('previewView').classList.remove('hidden');
+            document.getElementById('previewView').classList.add('flex');
+
+            // Reset scan button state just in case
+            scanButton.disabled = false;
+            scanButton.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
+                </svg>
+                Start Analysis
+            `;
         };
         reader.readAsDataURL(file);
     }
@@ -52,6 +61,7 @@ function previewImage(event) {
 
 function showStatus(message, isError = false) {
     statusMessage.classList.remove('hidden', 'text-red-600', 'bg-red-50', 'text-blue-600', 'bg-blue-50');
+    statusMessage.classList.add('block'); // Ensure it shows
     if (isError) {
         statusMessage.classList.add('text-red-600', 'bg-red-50');
         statusMessage.innerHTML = `Error: ${message}`;
@@ -62,10 +72,19 @@ function showStatus(message, isError = false) {
 }
 
 function resetUI() {
-    welcomeMessage.classList.add('hidden');
+    // Restore Default View
+    document.getElementById('defaultView').classList.remove('hidden');
+    document.getElementById('previewView').classList.add('hidden');
+    document.getElementById('previewView').classList.remove('flex');
+
+    // Hide Results
     resultsContainer.classList.add('hidden');
     resultsContainer.classList.remove('flex', 'flex-col');
     statusMessage.classList.add('hidden');
+
+    // Clear Input
+    imageUpload.value = '';
+    uploadedImageBase64 = null;
 }
 
 async function startScan() {
