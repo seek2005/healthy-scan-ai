@@ -189,60 +189,87 @@ function displayResults(data) {
     }
 
     document.getElementById('healthyScanSummary').innerHTML = data.summary.replace(/\*\*(.*?)\*\*/g, '<strong class="text-emerald-800 font-extrabold">$1</strong>');
-    const tableContainer = document.getElementById('portionAnalysisTable');
-    tableContainer.innerHTML = '';
+    // --- NEW: Positives & Negatives List Display ---
+    const tableElement = document.getElementById('portionAnalysisTable');
+    if (tableElement) {
+        const container = tableElement.closest('.glass-panel');
 
-    const getBadge = (text) => {
-        if (!text) return "";
-        const lower = text.toLowerCase();
-        if (lower.includes("excessive")) return `<span class="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-700">Excessive</span>`;
-        if (lower.includes("high")) return `<span class="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-orange-100 text-orange-700">High</span>`;
-        return `<span class="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-700">Good</span>`;
-    };
+        // Generate Negatives List HTML
+        let negativesHTML = '';
+        if (data.analysis && data.analysis.negatives && data.analysis.negatives.length > 0) {
+            negativesHTML = data.analysis.negatives.map(item => `
+                <li class="bg-white p-3 rounded-xl border border-red-100 shadow-sm flex items-start gap-3">
+                    <div class="mt-1 min-w-[20px] text-red-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="font-bold text-gray-800 text-sm">${item.title} <span class="bg-red-100 text-red-700 text-[10px] px-2 py-0.5 rounded-full ml-1">${item.value}</span></div>
+                        <p class="text-xs text-gray-500 mt-0.5 leading-snug">${item.description}</p>
+                    </div>
+                </li>
+            `).join('');
+        } else {
+            negativesHTML = '<p class="text-gray-400 italic text-sm text-center">No negatives detected.</p>';
+        }
 
-    // Clear and populate ingredients container
-    const ingredientsContainer = document.getElementById('ingredientsContainer');
-    ingredientsContainer.innerHTML = '';
+        // Generate Positives List HTML
+        let positivesHTML = '';
+        if (data.analysis && data.analysis.positives && data.analysis.positives.length > 0) {
+            positivesHTML = data.analysis.positives.map(item => `
+                <li class="bg-white p-3 rounded-xl border border-emerald-100 shadow-sm flex items-start gap-3">
+                     <div class="mt-1 min-w-[20px] text-emerald-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="font-bold text-gray-800 text-sm">${item.title} <span class="bg-emerald-100 text-emerald-700 text-[10px] px-2 py-0.5 rounded-full ml-1">${item.value}</span></div>
+                        <p class="text-xs text-gray-500 mt-0.5 leading-snug">${item.description}</p>
+                    </div>
+                </li>
+            `).join('');
+        } else {
+            positivesHTML = '<p class="text-gray-400 italic text-sm text-center">No highlights found.</p>';
+        }
 
-    if (data.ingredients_list && data.ingredients_list.length > 0) {
-        data.ingredients_list.forEach(ing => {
-            const chip = document.createElement('span');
-            chip.className = `ingredient-tooltip text-xs px-3 py-1.5 rounded-full border font-medium transition-all hover:scale-105 cursor-help ${ing.is_harmful ? 'bg-red-50 text-red-600 border-red-100' : 'bg-emerald-50 text-emerald-700 border-emerald-100'}`;
-            chip.innerHTML = `
-                ${ing.name}
-                <span class="tooltip-text">${ing.description || 'No description available'}</span>
-            `;
-            ingredientsContainer.appendChild(chip);
-        });
-    } else {
-        ingredientsContainer.innerHTML = '<p class="text-gray-400 italic">No ingredients data available.</p>';
+        // Replace Container Content
+        container.innerHTML = `
+            <h3 class="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
+                <div class="p-3 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl shadow-md text-white">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-7 h-7">
+                        <path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm8.706-1.442c1.146-.573 2.437.463 2.126 1.706l-.709 2.836.042-.02a.75.75 0 01.67 1.34l-.04.022c-1.147.573-2.438-.463-2.127-1.706l.71-2.836-.042.02a.75.75 0 11-.671-1.34l.041-.022zM12 9a.75.75 0 100-1.5.75.75 0 000 1.5z" clip-rule="evenodd" />
+                    </svg>
+                </div>
+                Product Analysis
+            </h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Negatives Column -->
+                <div class="bg-red-50/50 rounded-2xl p-5 border border-red-100">
+                    <h4 class="text-red-800 font-bold mb-4 flex items-center gap-2 text-sm uppercase tracking-wider">
+                        <span class="w-2 h-2 rounded-full bg-red-500"></span>
+                        Negatives
+                    </h4>
+                    <ul class="space-y-3">
+                        ${negativesHTML}
+                    </ul>
+                </div>
+
+                <!-- Positives Column -->
+                <div class="bg-emerald-50/50 rounded-2xl p-5 border border-emerald-100">
+                     <h4 class="text-emerald-800 font-bold mb-4 flex items-center gap-2 text-sm uppercase tracking-wider">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                        Positives
+                    </h4>
+                    <ul class="space-y-3">
+                        ${positivesHTML}
+                    </ul>
+                </div>
+            </div>
+        `;
     }
-
-    data.portion_analysis.forEach(item => {
-        const row = `
-            <tr class="border-b border-gray-100 last:border-0">
-                <td class="py-3 font-bold text-gray-800 text-sm">${item.stage.split(' ')[0]}</td>
-                <td class="py-3">
-                    <div class="flex flex-col items-start gap-1">
-                        ${getBadge(item.sugar_recommendation)}
-                        <span class="text-xs text-gray-400 font-medium ml-1">${item.sugar_percentage || ''}</span>
-                    </div>
-                </td>
-                <td class="py-3">
-                    <div class="flex flex-col items-start gap-1">
-                        ${getBadge(item.sodium_recommendation)}
-                        <span class="text-xs text-gray-400 font-medium ml-1">${item.sodium_percentage || ''}</span>
-                    </div>
-                </td>
-                <td class="py-3">
-                    <div class="flex flex-col items-start gap-1">
-                        ${getBadge(item.fat_recommendation)}
-                        <span class="text-xs text-gray-400 font-medium ml-1">${item.fat_percentage || ''}</span>
-                    </div>
-                </td>
-            </tr>`;
-        tableContainer.innerHTML += row;
-    });
 
     if (data.alternative) {
         const searchTerm = data.alternative.search_term || `${data.alternative.brand} ${data.alternative.name} healthy`;

@@ -26,38 +26,6 @@ function cleanJSON(text) {
     return match[0].replace(/```json/g, '').replace(/```/g, '');
 }
 
-// --- Nutrient Standards & Calculation Logic ---
-const DAILY_LIMITS = {
-    "Children (4-8)": { sugar: 25, sodium: 1200, fat: 10 }, // g, mg, g
-    "Adults (19-50)": { sugar: 50, sodium: 2300, fat: 20 },
-    "Seniors (51+)": { sugar: 30, sodium: 1500, fat: 15 }
-};
-
-function calculatePortionAnalysis(sugarG, sodiumMg, satFatG) {
-    // Default to 0 if null/undefined
-    const s = sugarG || 0;
-    const sod = sodiumMg || 0;
-    const f = satFatG || 0;
-
-    return Object.entries(DAILY_LIMITS).map(([stage, limits]) => {
-        const sugarPct = Math.round((s / limits.sugar) * 100);
-        const sodiumPct = Math.round((sod / limits.sodium) * 100);
-        const fatPct = Math.round((f / limits.fat) * 100);
-
-        const getRec = (pct) => pct > 100 ? "EXCESSIVE" : pct > 50 ? "High" : "Recommended";
-
-        return {
-            stage: stage,
-            sugar_recommendation: getRec(sugarPct),
-            sugar_percentage: `${sugarPct}%`,
-            sodium_recommendation: getRec(sodiumPct),
-            sodium_percentage: `${sodiumPct}%`,
-            fat_recommendation: getRec(fatPct),
-            fat_percentage: `${fatPct}%`
-        };
-    });
-}
-
 // Routes defined on the router (no /api prefix here)
 router.post('/analyze-image', async (req, res) => {
     try {
@@ -67,23 +35,23 @@ router.post('/analyze-image', async (req, res) => {
         const prompt = `You are a nutritionist AI. Analyze this nutrition label. 
         1. Identify product. 
         2. Summarize health value. 
-        3. EXTRACT the exact nutrient values. 
-           - **SUGAR**: Look for "Total Sugars". If there are multiple columns (e.g., Per Serving vs Per Container), **ALWAYS USE THE LARGEST NUMBER**. If the container is a single item (bottle/can), use the value for the WHOLE container. (Expected: ~38g for this bottle).
-           - **SODIUM**: Look for "Sodium". Use the largest number found.
-           - **SAT FAT**: Look for "Saturated Fat". Use the largest number found.
-           - Output raw numbers (e.g., 38 not 38g).
-        4. List ALL ingredients found in the product. Mark if they are generally considered harmful/controversial (e.g., high fructose corn syrup, red 40). Provide a very brief description (max 10 words) of what it is.
+        3. Analyze the product for "Positives" (Health benefits, good nutrients) and "Negatives" (High sugar, additives, processing).
+        4. List ALL ingredients found in the product. Mark if they are generally considered harmful/controversial.
         5. Suggest REAL US market alternative product. 
-        CRITICAL: Output ONLY raw JSON. No intro text.
+        CRITICAL: Output ONLY raw JSON in English. No intro text.
         { 
           "summary": "string (use **bold** for emphasis)", 
-          "extracted_nutrients": { "sugar_g": number, "sodium_mg": number, "sat_fat_g": number },
+          "analysis": {
+              "negatives": [ { "title": "string (e.g. High Sugar)", "value": "string (e.g. 38g)", "description": "string (short explanation)" } ],
+              "positives": [ { "title": "string (e.g. Protein)", "value": "string (e.g. 10g)", "description": "string" } ]
+          },
           "allergens": [
             { "name": "string", "severity": "string (Low/Medium/High)", "description": "string" }
           ],
           "ingredients_list": [{"name": "string", "is_harmful": boolean, "description": "string"}],
           "alternative": { "name": "string", "brand": "string", "score": "string", "reason": "string", "search_term": "string (optimized for Amazon search)" } 
         }`;
+
 
         const result = await model.generateContent([
             prompt,
@@ -97,16 +65,6 @@ router.post('/analyze-image', async (req, res) => {
         if (!cleaned) throw new Error("Failed to parse JSON from AI response");
 
         const data = JSON.parse(cleaned);
-
-        // Calculate portion analysis programmatically
-        if (data.extracted_nutrients) {
-            data.portion_analysis = calculatePortionAnalysis(
-                data.extracted_nutrients.sugar_g,
-                data.extracted_nutrients.sodium_mg,
-                data.extracted_nutrients.sat_fat_g
-            );
-        }
-
         res.json(data);
 
     } catch (error) {
@@ -120,7 +78,7 @@ router.post('/analyze-barcode', async (req, res) => {
         const { barcode } = req.body;
         if (!barcode) return res.status(400).json({ error: 'No barcode provided' });
 
-        console.log(`Fetching data for barcode: ${barcode}`);
+        console.log(`Fetching data for barcode: ${barcode} `);
 
         // 1. Fetch product data from OpenFoodFacts
         const offResponse = await fetch(`https://world.openfoodfacts.org/api/v2/product/${barcode}.json`);
@@ -145,13 +103,16 @@ router.post('/analyze-barcode', async (req, res) => {
         
         1. Identify product. 
         2. Summarize health value based on the ingredients and nutriments provided. 
-        3. EXTRACT the exact amount of Sugar (in grams), Sodium (in mg), and Saturated Fat (in grams) per serving. If not found, estimate or set to 0.
-        4. List ALL ingredients found in the product. Mark if they are generally considered harmful/controversial (e.g., high fructose corn syrup, red 40). Provide a very brief description (max 10 words) of what it is.
+        3. Analyze the product for "Positives" (Health benefits, good nutrients) and "Negatives" (High sugar, additives, processing).
+        4. List ALL ingredients found in the product. Mark if they are generally considered harmful/controversial.
         5. Suggest REAL US market alternative product. 
-        CRITICAL: Output ONLY raw JSON. No intro text.
+        CRITICAL: Output ONLY raw JSON in English. No intro text.
         { 
           "summary": "string (use **bold** for emphasis)", 
-          "extracted_nutrients": { "sugar_g": number, "sodium_mg": number, "sat_fat_g": number },
+          "analysis": {
+              "negatives": [ { "title": "string (e.g. High Sugar)", "value": "string (e.g. 38g)", "description": "string (short explanation)" } ],
+              "positives": [ { "title": "string (e.g. Protein)", "value": "string (e.g. 10g)", "description": "string" } ]
+          },
           "allergens": [
             { "name": "string", "severity": "string (Low/Medium/High)", "description": "string" }
           ],
@@ -167,26 +128,6 @@ router.post('/analyze-barcode', async (req, res) => {
         if (!cleaned) throw new Error("Failed to parse JSON from AI response");
 
         const data = JSON.parse(cleaned);
-
-        // Try to get nutrients from OpenFoodFacts first, otherwise use AI extracted
-        let sugar = product.nutriments?.sugars_value;
-        let sodium = product.nutriments?.sodium_value ? product.nutriments.sodium_value * 1000 : null; // Convert g to mg if needed, OFF usually gives g or mg. Check unit.
-        // OFF nutriments are usually per 100g. We need per serving.
-        // If serving size is available, we should calculate. 
-        // For simplicity, let's trust the AI's extraction from the context which includes nutriments, 
-        // OR if AI fails, fallback to OFF 100g values (better than nothing).
-
-        // Actually, let's rely on the AI to normalize to "per serving" since it reads the whole context.
-        // But we overwrite the portion_analysis using the helper.
-
-        if (data.extracted_nutrients) {
-            data.portion_analysis = calculatePortionAnalysis(
-                data.extracted_nutrients.sugar_g,
-                data.extracted_nutrients.sodium_mg,
-                data.extracted_nutrients.sat_fat_g
-            );
-        }
-
         res.json(data);
 
     } catch (error) {
