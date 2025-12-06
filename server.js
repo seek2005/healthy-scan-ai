@@ -16,8 +16,8 @@ app.use(express.static('.')); // Serve static files from current directory
 
 // Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-// Note: gemini-1.5-flash returned 404 (not found in v1beta/user region), trying 1.5-pro
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+// Using gemini-2.0-flash-exp - the 1.5 models are not available in this API region
+const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
 
 // Helper to clean JSON response
 function cleanJSON(text) {
