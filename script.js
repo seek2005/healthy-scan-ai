@@ -287,7 +287,7 @@ function displayResults(data) {
         // Inject Content
         container.innerHTML = `
             <div class="mb-10">
-                <h3 class="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
+                <h3 class="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-4">
                     <img src="g3.jpg" alt="Product" class="w-12 h-12 object-contain hover:scale-110 transition-transform duration-300">
                     Product Analysis
                 </h3>
