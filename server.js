@@ -170,29 +170,58 @@ router.post('/analyze-barcode', async (req, res) => {
             ingredients: product.ingredients_text
         };
 
-        // 2. Send data to Gemini for analysis
+        // 2. EXTRACT NUTRIENTS DIRECTLY (Hard Data > AI Guess)
+        // Prefer 'value per serving' if available, else 'per 100g'
+        const getNutrient = (key) => {
+            const n = product.nutriments;
+            // Try explicit serving first, then 100g, then generic value
+            return n[`${key}_serving`] || n[`${key}_100g`] || n[key] || 0;
+        };
+
+        const sugarG = getNutrient('sugars');
+        const sodiumMg = getNutrient('sodium') * 1000; // OFF usually returns sodium in grams? Check this.
+        // Wait, OFF returns sodium in grams/100g usually, or unit specified. 
+        // Let's use the explicit unit check if possible, to be safe assume OFF follows standards (grams for macros, varies for micro).
+        // Actually, let's look at the raw data structure usually: 'sodium_100g' is in grams. 'sodium_serving' is in grams.
+        // My limit logic expects mg for sodium. So I need to multiply by 1000.
+
+        // Re-evaluating sodium: OFF 'sodium' is usually in Grams. My daily limit is 2300mg (2.3g).
+        // So yes, need to convert to mg.
+        const sodiumVal = (product.nutriments.sodium_value || product.nutriments.sodium || 0);
+        const sodiumUnit = product.nutriments.sodium_unit || 'g'; // Default to grams if missing
+
+        let finalSodiumMg = sodiumVal;
+        if (sodiumUnit === 'g') finalSodiumMg = sodiumVal * 1000;
+        if (sodiumUnit === 'mg') finalSodiumMg = sodiumVal;
+
+        const realNutrients = {
+            sugar_g: Number(getNutrient('sugars') || 0),
+            sodium_mg: Number(finalSodiumMg || 0),
+            sat_fat_g: Number(getNutrient('saturated-fat') || 0)
+        };
+
+        // 3. Send data to Gemini for Qualitative Analysis
         const prompt = `You are a nutritionist AI. Analyze this product data from a barcode scan.
         Product: ${JSON.stringify(productContext)}
+        REAL NUTRIENTS (Use these EXACTLY): ${JSON.stringify(realNutrients)}
         
         1. Identify product. 
-        2. Summarize health value based on the ingredients and nutriments provided. 
-        3. Analyze the product for "Positives" (Health benefits, good nutrients) and "Negatives" (High sugar, additives, processing).
-        4. EXTRACT the exact nutrient values from context (sugar, sodium, sat fat).
-        5. List ALL ingredients found. Provide a short description (max 10 words) for EACH.
+        2. Summarize health value. 
+        3. Analyze "Positives" vs "Negatives".
+        4. RETURN the 'extracted_nutrients' block using the REAL NUTRIENTS provided above.
+        5. List ALL ingredients found.
         6. Suggest REAL US market alternative product. 
         CRITICAL: Output ONLY raw JSON in English. No intro text.
         { 
           "summary": "string (use **bold** for emphasis)", 
           "analysis": {
-              "negatives": [ { "title": "string (e.g. High Sugar)", "value": "string (e.g. 38g)", "description": "string (short explanation)" } ],
-              "positives": [ { "title": "string (e.g. Protein)", "value": "string (e.g. 10g)", "description": "string" } ]
+              "negatives": [ { "title": "string", "value": "string", "description": "string" } ],
+              "positives": [ { "title": "string", "value": "string", "description": "string" } ]
           },
-          "extracted_nutrients": { "sugar_g": number, "sodium_mg": number, "sat_fat_g": number },
-          "allergens": [
-            { "name": "string", "severity": "string (Low/Medium/High)", "description": "string" }
-          ],
+          "extracted_nutrients": { "sugar_g": ${realNutrients.sugar_g}, "sodium_mg": ${realNutrients.sodium_mg}, "sat_fat_g": ${realNutrients.sat_fat_g} },
+          "allergens": [ { "name": "string", "severity": "string", "description": "string" } ],
           "ingredients_list": [{"name": "string", "is_harmful": boolean, "description": "string"}],
-          "alternative": { "name": "string", "brand": "string", "score": "string", "reason": "string", "search_term": "string (optimized for Amazon search)" } 
+          "alternative": { "name": "string", "brand": "string", "score": "string", "reason": "string", "search_term": "string" } 
         }`;
 
         const result = await model.generateContent(prompt);
@@ -208,24 +237,15 @@ router.post('/analyze-barcode', async (req, res) => {
 
         const data = JSON.parse(cleaned);
 
-        // Robust parsing helper
-        const parseNutrient = (val) => {
-            if (typeof val === 'number') return val;
-            if (typeof val === 'string') return parseFloat(val.replace(/[^0-9.]/g, '')) || 0;
-            return 0;
-        };
+        // Forced Override with Real Data (Trust Code over AI)
+        data.extracted_nutrients = realNutrients;
 
-        if (data.extracted_nutrients) {
-            data.extracted_nutrients.sugar_g = parseNutrient(data.extracted_nutrients.sugar_g);
-            data.extracted_nutrients.sodium_mg = parseNutrient(data.extracted_nutrients.sodium_mg);
-            data.extracted_nutrients.sat_fat_g = parseNutrient(data.extracted_nutrients.sat_fat_g);
-
-            data.portion_analysis = calculatePortionAnalysis(
-                data.extracted_nutrients.sugar_g,
-                data.extracted_nutrients.sodium_mg,
-                data.extracted_nutrients.sat_fat_g
-            );
-        }
+        // Calculate portion analysis programmatically
+        data.portion_analysis = calculatePortionAnalysis(
+            data.extracted_nutrients.sugar_g,
+            data.extracted_nutrients.sodium_mg,
+            data.extracted_nutrients.sat_fat_g
+        );
 
         // Save to Cache
         resultCache.set(barcode, data);
