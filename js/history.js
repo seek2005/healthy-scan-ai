@@ -21,6 +21,8 @@ export function saveToHistory(data) {
     localStorage.setItem('scanHistory', JSON.stringify(history));
 }
 
+export const loadFromHistory = getHistory;
+
 export function renderHistory(containerId, listId, onItemClick) {
     const history = getHistory();
     const container = document.getElementById(containerId);
