@@ -191,9 +191,10 @@ export function displayResults(data) {
     // 2. Table (Age Breakdown)
     const tableElement = document.getElementById('portionAnalysisTable');
     if (tableElement) {
+        const parentCard = tableElement.closest('.glass-panel'); // Re-introduced definition
         if (parentCard) {
             parentCard.className = 'glass-panel rounded-[1.5rem] p-4 md:p-10 bg-gradient-to-r from-orange-50 to-amber-50 shadow-xl border border-orange-100/50';
-            const headerIcon = parentCard.querySelector('.p-2'); // selector might need adjustment if class changed
+            const headerIcon = parentCard.querySelector('.p-2');
             if (headerIcon) headerIcon.className = 'p-2 md:p-3 bg-white text-orange-500 rounded-xl shadow-sm';
         }
 
@@ -228,7 +229,7 @@ export function displayResults(data) {
     const ingContainer = document.getElementById('ingredientsContainer');
     if (ingContainer) {
         ingContainer.innerHTML = '';
-        const parentCard = ingContainer.closest('.glass-panel');
+        const parentCard = ingContainer.closest('.glass-panel'); // Re-introduced definition
         if (parentCard) {
             parentCard.className = 'glass-panel rounded-[1.5rem] p-4 md:p-10 bg-gradient-to-r from-orange-50 to-amber-50 shadow-xl border border-orange-100/50';
             const headerIcon = parentCard.querySelector('.p-2');
