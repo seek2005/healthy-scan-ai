@@ -8,6 +8,7 @@ import {
     resetUI,
     displayResults
 } from './ui.js';
+import { initAuth } from './auth.js';
 
 // Global State
 let uploadedImageBase64 = null;
