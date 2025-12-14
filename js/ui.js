@@ -147,11 +147,11 @@ export function displayResults(data) {
                     </button>
                 </div>
     
-    <div class="glass-panel rounded-[2rem] p-8 md:p-10 bg-gradient-to-r from-orange-50 to-amber-50 shadow-xl border border-orange-100/50">
-                    <h3 class="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-3">
-                         <div class="p-3 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl shadow-md text-white">
+    <div class="glass-panel rounded-[1.5rem] p-5 md:p-10 bg-gradient-to-r from-orange-50 to-amber-50 shadow-xl border border-orange-100/50">
+                    <h3 class="text-xl md:text-2xl font-bold text-gray-900 mb-4 flex items-center gap-3">
+                         <div class="p-2 md:p-3 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl shadow-md text-white">
                             <!-- Custom Nutrition Label + Magnifying Glass Icon -->
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-8 h-8">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-7 h-7 md:w-8 md:h-8">
                                 <path fill-rule="evenodd" d="M5.625 1.5c-1.036 0-1.875.84-1.875 1.875v17.25c0 1.035.84 1.875 1.875 1.875h12.75c1.035 0 1.875-.84 1.875-1.875V12.75A3.75 3.75 0 0016.5 9h-1.875a1.875 1.875 0 01-1.875-1.875V5.25A3.75 3.75 0 009 1.5H5.625zM7.5 15a.75.75 0 01.75-.75h1.5a.75.75 0 010 1.5h-1.5A.75.75 0 017.5 15zm0-3.75a.75.75 0 01.75-.75h4.5a.75.75 0 010 1.5h-4.5a.75.75 0 01-.75-.75zm0-3.75a.75.75 0 01.75-.75h4.5a.75.75 0 010 1.5h-4.5a.75.75 0 01-.75-.75z" clip-rule="evenodd" opacity="0.8" />
                                 <path d="M12.971 1.816A5.23 5.23 0 0114.25 5.25v1.875c0 .207.168.375.375.375H16.5a5.23 5.23 0 013.434 1.279 9.768 9.768 0 00-6.963-6.963z" />
                                 <path fill-rule="evenodd" d="M16 11a4 4 0 10-8 0 4 4 0 008 0zm-1.5 4.5l3.5 3.5-1.5 1.5-3.5-3.5a6 6 0 111.5-1.5z" clip-rule="evenodd" transform="translate(4, 4) scale(0.8)" />
@@ -159,7 +159,7 @@ export function displayResults(data) {
                         </div>
                          AI Product Analysis
                     </h3>
-                    <p class="text-gray-700 leading-relaxed font-medium text-lg">
+                    <p class="text-gray-700 leading-relaxed font-medium text-base md:text-lg">
                         ${data.summary.replace(/\*\*(.*?)\*\*/g, '<strong class="text-orange-900">$1</strong>')}
                     </p>
                 </div>
@@ -191,11 +191,10 @@ export function displayResults(data) {
     // 2. Table (Age Breakdown)
     const tableElement = document.getElementById('portionAnalysisTable');
     if (tableElement) {
-        const parentCard = tableElement.closest('.glass-panel');
         if (parentCard) {
-            parentCard.className = 'rounded-[2rem] p-8 md:p-10 bg-gradient-to-r from-orange-50 to-amber-50 shadow-xl border border-orange-100/50';
-            const headerIcon = parentCard.querySelector('.p-3');
-            if (headerIcon) headerIcon.className = 'p-3 bg-white text-orange-500 rounded-xl shadow-sm';
+            parentCard.className = 'glass-panel rounded-[1.5rem] p-4 md:p-10 bg-gradient-to-r from-orange-50 to-amber-50 shadow-xl border border-orange-100/50';
+            const headerIcon = parentCard.querySelector('.p-2'); // selector might need adjustment if class changed
+            if (headerIcon) headerIcon.className = 'p-2 md:p-3 bg-white text-orange-500 rounded-xl shadow-sm';
         }
 
         let rows = '';
@@ -203,19 +202,19 @@ export function displayResults(data) {
             for (const [group, nutrients] of Object.entries(data.portion_analysis)) {
                 rows += `
     <tr class="group hover:bg-white/50 transition-colors border-b border-orange-100 last:border-0">
-                    <td class="py-4 font-bold text-gray-800 capitalize pl-2 text-sm md:text-base">${group}</td>
-                    <td class="py-4 text-center">
-                        <span class="px-3 py-1 rounded-full text-xs font-bold ${getColorClass(nutrients.sugar)}">
+                    <td class="py-2 md:py-4 font-bold text-gray-800 capitalize pl-1 text-xs md:text-base w-1/4 break-words">${group}</td>
+                    <td class="py-2 md:py-4 text-center w-1/4">
+                        <span class="px-2 py-1 rounded-full text-[10px] md:text-xs font-bold ${getColorClass(nutrients.sugar)} block w-full truncate">
                             ${nutrients.sugar}
                         </span>
                     </td>
-                    <td class="py-4 text-center">
-                        <span class="px-3 py-1 rounded-full text-xs font-bold ${getColorClass(nutrients.sodium)}">
+                    <td class="py-2 md:py-4 text-center w-1/4">
+                        <span class="px-2 py-1 rounded-full text-[10px] md:text-xs font-bold ${getColorClass(nutrients.sodium)} block w-full truncate">
                             ${nutrients.sodium}
                         </span>
                     </td>
-                    <td class="py-4 text-center">
-                        <span class="px-3 py-1 rounded-full text-xs font-bold ${getColorClass(nutrients.saturated_fat)}">
+                    <td class="py-2 md:py-4 text-center w-1/4">
+                        <span class="px-2 py-1 rounded-full text-[10px] md:text-xs font-bold ${getColorClass(nutrients.saturated_fat)} block w-full truncate">
                             ${nutrients.saturated_fat}
                         </span>
                     </td>
@@ -231,18 +230,18 @@ export function displayResults(data) {
         ingContainer.innerHTML = '';
         const parentCard = ingContainer.closest('.glass-panel');
         if (parentCard) {
-            parentCard.className = 'rounded-[2rem] p-8 md:p-10 bg-gradient-to-r from-orange-50 to-amber-50 shadow-xl border border-orange-100/50';
-            const headerIcon = parentCard.querySelector('.p-3');
-            if (headerIcon) headerIcon.className = 'p-3 bg-white text-orange-600 rounded-xl shadow-sm';
+            parentCard.className = 'glass-panel rounded-[1.5rem] p-4 md:p-10 bg-gradient-to-r from-orange-50 to-amber-50 shadow-xl border border-orange-100/50';
+            const headerIcon = parentCard.querySelector('.p-2');
+            if (headerIcon) headerIcon.className = 'p-2 md:p-3 bg-white text-orange-600 rounded-xl shadow-sm';
         }
 
         if (data.ingredients_list) {
             data.ingredients_list.forEach(ing => {
                 const el = document.createElement('div');
-                el.className = `group relative px-4 py-2 rounded-full text-xs font-bold flex items-center gap-1 cursor-help transition-all hover:scale-105 shadow-sm hover:shadow-md ${ing.is_harmful ? 'bg-red-100 text-red-700 border border-red-200' : 'bg-white text-emerald-700 border border-emerald-100'}`;
+                el.className = `group relative px-3 py-1 md:px-4 md:py-2 rounded-full text-[10px] md:text-xs font-bold flex items-center gap-1 cursor-help transition-all hover:scale-105 shadow-sm hover:shadow-md ${ing.is_harmful ? 'bg-red-100 text-red-700 border border-red-200' : 'bg-white text-emerald-700 border border-emerald-100'}`;
                 el.innerHTML = `
                     ${ing.name}
-<div class="tooltip-bubble">
+<div class="tooltip-bubble hidden md:block">
     ${ing.description || "No description available"}
 </div>
 `;
@@ -259,7 +258,7 @@ export function displayResults(data) {
         const productImageUrl = `https://image.pollinations.ai/prompt/${cleanName}?width=300&height=300&nologo=true`;
 
         altContainer.innerHTML = `
-            <div class="p-8 md:p-10 bg-gradient-to-r from-orange-50 to-amber-50 rounded-[2.5rem] border border-orange-100 shadow-xl mt-8">
+            <div class="glass-panel p-5 md:p-10 bg-gradient-to-r from-orange-50 to-amber-50 rounded-[2rem] md:rounded-[2.5rem] border border-orange-100 shadow-xl mt-6 md:mt-8">
                 <div class="flex items-center gap-4 mb-8">
                      <div class="p-2 bg-white text-orange-600 rounded-xl shadow-sm">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-8 h-8">
