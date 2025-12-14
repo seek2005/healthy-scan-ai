@@ -1,4 +1,3 @@
-import { signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 import { auth, googleProvider } from "./firebase-config.js";
 import { syncLocalHistoryToCloud, loadCloudHistory } from "./cloud_storage.js";
 import { renderHistory, loadFromHistory } from "./history.js";
@@ -13,7 +12,8 @@ export function initAuth() {
     if (loginBtn) {
         loginBtn.addEventListener('click', async () => {
             try {
-                const result = await signInWithPopup(auth, googleProvider);
+                // Compat: auth.signInWithPopup(provider)
+                const result = await auth.signInWithPopup(googleProvider);
                 const user = result.user;
                 console.log("Logged in as:", user.displayName);
                 // Sync history after login
@@ -29,7 +29,8 @@ export function initAuth() {
     if (logoutBtn) {
         logoutBtn.addEventListener('click', async () => {
             try {
-                await signOut(auth);
+                // Compat: auth.signOut()
+                await auth.signOut();
                 console.log("User signed out");
                 window.location.reload(); // Reload to clear cloud state
             } catch (error) {
@@ -39,7 +40,8 @@ export function initAuth() {
     }
 
     // Auth State Listener
-    onAuthStateChanged(auth, async (user) => {
+    // Compat: auth.onAuthStateChanged(cb)
+    auth.onAuthStateChanged(async (user) => {
         if (user) {
             // User is signed in
             if (loginBtn) loginBtn.classList.add('hidden');

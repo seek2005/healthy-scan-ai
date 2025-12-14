@@ -1,7 +1,3 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getAuth, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
-import { getFirestore } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
-
 const firebaseConfig = {
     apiKey: "AIzaSyDfOE56zU9yOek2uLR_007IiSMEouCHXnw",
     authDomain: "mini-plataforma.firebaseapp.com",
@@ -11,10 +7,10 @@ const firebaseConfig = {
     appId: "1:1009430921994:web:d761b6c0bb9db6ce0bb0f3"
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const googleProvider = new GoogleAuthProvider();
+// Initialize Firebase using Global Compat namespace
+const app = firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+const googleProvider = new firebase.auth.GoogleAuthProvider();
 
 export { auth, db, googleProvider };
