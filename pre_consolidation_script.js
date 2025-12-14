@@ -1,4 +1,4 @@
-const imageUpload = document.getElementById('imageUpload');
+﻿const imageUpload = document.getElementById('imageUpload');
 const imagePreview = document.getElementById('imagePreview');
 const uploadPlaceholder = document.getElementById('uploadPlaceholder'); // Note: This element ID might not exist in HTML, checking usage.
 const scanButton = document.getElementById('scanButton');
@@ -31,7 +31,6 @@ function switchTab(tabName) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// Update preview logic to switch view states
 function previewImage(event) {
     const file = event.target.files[0];
     if (file) {
@@ -39,21 +38,13 @@ function previewImage(event) {
         const reader = new FileReader();
         reader.onload = (e) => {
             imagePreview.src = e.target.result;
-            uploadedImageBase64 = e.target.result.split(',')[1];
-
-            // Toggle Views: Search -> Preview
-            document.getElementById('defaultView').classList.add('hidden');
-            document.getElementById('previewView').classList.remove('hidden');
-            document.getElementById('previewView').classList.add('flex');
-
-            // Reset scan button state just in case
+            imagePreview.parentElement.classList.remove('hidden');
+            document.querySelector('#imageUpload').nextElementSibling.querySelector('div').classList.add('hidden');
             scanButton.disabled = false;
-            scanButton.innerHTML = `
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
-                </svg>
-                Start Analysis
-            `;
+            scanButton.classList.remove('bg-gray-200', 'text-gray-400');
+            scanButton.classList.add('bg-gradient-to-r', 'from-emerald-500', 'to-teal-500', 'text-white', 'shadow-xl');
+            scanButton.innerHTML = `Analyze Image`;
+            uploadedImageBase64 = e.target.result.split(',')[1];
         };
         reader.readAsDataURL(file);
     }
@@ -61,7 +52,6 @@ function previewImage(event) {
 
 function showStatus(message, isError = false) {
     statusMessage.classList.remove('hidden', 'text-red-600', 'bg-red-50', 'text-blue-600', 'bg-blue-50');
-    statusMessage.classList.add('block'); // Ensure it shows
     if (isError) {
         statusMessage.classList.add('text-red-600', 'bg-red-50');
         statusMessage.innerHTML = `Error: ${message}`;
@@ -72,27 +62,14 @@ function showStatus(message, isError = false) {
 }
 
 function resetUI() {
-    // Restore Default View
-    document.getElementById('defaultView').classList.remove('hidden');
-    document.getElementById('previewView').classList.add('hidden');
-    document.getElementById('previewView').classList.remove('flex');
-
-    // Hide Results
+    welcomeMessage.classList.add('hidden');
     resultsContainer.classList.add('hidden');
     resultsContainer.classList.remove('flex', 'flex-col');
     statusMessage.classList.add('hidden');
-
-    // Clear Input
-    imageUpload.value = '';
-    uploadedImageBase64 = null;
 }
 
 async function startScan() {
     if (!uploadedImageBase64) return;
-
-    // Capture data before resetUI clears the global variable
-    const imageData = uploadedImageBase64;
-    const fileType = uploadedFileType;
 
     resetUI();
     showStatus("Analyzing image with AI...");
@@ -105,8 +82,8 @@ async function startScan() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                image: imageData,
-                mimeType: fileType
+                image: uploadedImageBase64,
+                mimeType: uploadedFileType
             })
         });
 
@@ -287,8 +264,12 @@ function displayResults(data) {
         // Inject Content
         container.innerHTML = `
             <div class="mb-10">
-                <h3 class="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-4">
-                    <img src="g3.jpg" alt="Product" class="w-12 h-12 object-contain hover:scale-110 transition-transform duration-300">
+                <h3 class="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
+                    <div class="p-3 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl shadow-md text-white">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-7 h-7">
+                            <path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm8.706-1.442c1.146-.573 2.437.463 2.126 1.706l-.709 2.836.042-.02a.75.75 0 01.67 1.34l-.04.022c-1.147.573-2.438-.463-2.127-1.706l.71-2.836-.042.02a.75.75 0 11-.671-1.34l.041-.022zM12 9a.75.75 0 100-1.5.75.75 0 000 1.5z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
                     Product Analysis
                 </h3>
                 
@@ -309,9 +290,11 @@ function displayResults(data) {
             </div>
 
              <div class="border-t-2 border-dashed border-gray-100 pt-8">
-                <h3 class="text-xl font-bold text-gray-900 mb-6 flex items-center gap-4">
-                    <img src="g4.jpg" alt="Age Chart" class="w-12 h-12 rounded-xl object-contain hover:scale-110 transition-transform duration-300">
-                    Age Base Breakdown
+                <h3 class="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6 text-indigo-500">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+                    </svg>
+                    Family Safety Guide
                 </h3>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse">
@@ -365,7 +348,7 @@ function displayResults(data) {
 
         const altHTML = `
             <div class="flex items-center gap-4 mb-6 mt-8">
-                <img src="g5.jpg" alt="Alternative" class="w-12 h-12 object-contain hover:scale-110 transition-transform duration-300">
+                <div class="bg-gradient-to-br from-orange-500 to-amber-500 text-white w-12 h-12 rounded-2xl flex items-center justify-center text-2xl font-bold shadow-lg shadow-orange-200 border-2 border-white">3</div>
                 <h3 class="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-tight">Smart Alternative</h3>
             </div>
             <div class="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-100 shadow-xl transition-all hover:shadow-2xl hover:-translate-y-1 group">

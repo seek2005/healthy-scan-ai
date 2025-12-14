@@ -16,8 +16,8 @@ app.use(express.static('.')); // Serve static files from current directory
 
 // Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-// Using gemini-2.0-flash-exp - the 1.5 models are not available in this API region
-const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+// Using gemini-pro-latest - Exact match from API list
+const model = genAI.getGenerativeModel({ model: "gemini-pro-latest" });
 
 // Helper to clean JSON response
 function cleanJSON(text) {
@@ -39,23 +39,23 @@ function calculatePortionAnalysis(sugarG, sodiumMg, satFatG) {
     const sod = sodiumMg || 0;
     const f = satFatG || 0;
 
-    return Object.entries(DAILY_LIMITS).map(([stage, limits]) => {
+    const result = {};
+
+    Object.entries(DAILY_LIMITS).forEach(([stage, limits]) => {
         const sugarPct = Math.round((s / limits.sugar) * 100);
         const sodiumPct = Math.round((sod / limits.sodium) * 100);
         const fatPct = Math.round((f / limits.fat) * 100);
 
-        const getRec = (pct) => pct > 100 ? "EXCESSIVE" : pct > 50 ? "High" : "Recommended";
+        const getRec = (pct) => pct > 100 ? "Excessive" : pct > 50 ? "High" : "Recommended";
 
-        return {
-            stage: stage,
-            sugar_recommendation: getRec(sugarPct),
-            sugar_percentage: `${sugarPct}%`, // Kept for reference, but frontend can ignore
-            sodium_recommendation: getRec(sodiumPct),
-            sodium_percentage: `${sodiumPct}%`,
-            fat_recommendation: getRec(fatPct),
-            fat_percentage: `${fatPct}%`
+        result[stage] = {
+            sugar: getRec(sugarPct), // Client expects 'sugar'
+            sodium: getRec(sodiumPct),
+            saturated_fat: getRec(fatPct)
         };
     });
+
+    return result;
 }
 
 // Routes defined on the router (no /api prefix here)
@@ -137,12 +137,21 @@ router.post('/analyze-image', async (req, res) => {
     }
 });
 
+// In-memory cache for analysis results
+const resultCache = new Map();
+
 router.post('/analyze-barcode', async (req, res) => {
     try {
         const { barcode } = req.body;
         if (!barcode) return res.status(400).json({ error: 'No barcode provided' });
 
-        console.log(`Fetching data for barcode: ${barcode} `);
+        // 1. Check Cache
+        if (resultCache.has(barcode)) {
+            console.log(`⚡ CACHE HIT for barcode: ${barcode}`);
+            return res.json(resultCache.get(barcode));
+        }
+
+        console.log(`fetching data for barcode: ${barcode} `);
 
         // 1. Fetch product data from OpenFoodFacts
         const offResponse = await fetch(`https://world.openfoodfacts.org/api/v2/product/${barcode}.json`);
@@ -218,6 +227,8 @@ router.post('/analyze-barcode', async (req, res) => {
             );
         }
 
+        // Save to Cache
+        resultCache.set(barcode, data);
         res.json(data);
 
     } catch (error) {
