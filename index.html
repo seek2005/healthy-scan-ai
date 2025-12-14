@@ -21,6 +21,25 @@
 
 <body class="animate-gradient min-h-screen text-gray-700 selection:bg-emerald-200 selection:text-emerald-900 pb-16">
 
+    <!-- EMERGENCY DEBUGGER -->
+    <div id="debug-error-box"
+        style="display:none; position:fixed; top:0; left:0; width:100%; z-index:9999; background:red; color:white; padding:20px; font-family:monospace; white-space:pre-wrap; overflow:auto; max-height:50vh;">
+    </div>
+    <script>
+        window.onerror = function (msg, url, line, col, error) {
+            const box = document.getElementById('debug-error-box');
+            box.style.display = 'block';
+            box.innerText += "ERROR: " + msg + "\nEn: " + url + ":" + line + "\n\n";
+            return false;
+        };
+        window.addEventListener('unhandledrejection', function (event) {
+            const box = document.getElementById('debug-error-box');
+            box.style.display = 'block';
+            box.innerText += "PROMISE ERROR: " + event.reason + "\n\n";
+        });
+    </script>
+    <!-- END DEBUGGER -->
+
     <nav class="fixed top-0 left-0 right-0 z-50 nav-glass py-4">
         <div class="container mx-auto max-w-6xl px-4 flex justify-between items-center">
             <!-- Logo -->
