@@ -242,7 +242,7 @@ export function displayResults(data) {
                 el.className = `group relative px-3 py-1 md:px-4 md:py-2 rounded-full text-[10px] md:text-xs font-bold flex items-center gap-1 cursor-help transition-all hover:scale-105 shadow-sm hover:shadow-md ${ing.is_harmful ? 'bg-red-100 text-red-700 border border-red-200' : 'bg-white text-emerald-700 border border-emerald-100'}`;
                 el.innerHTML = `
                     ${ing.name}
-<div class="tooltip-bubble hidden md:block">
+<div class="tooltip-bubble">
     ${ing.description || "No description available"}
 </div>
 `;
