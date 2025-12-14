@@ -100,6 +100,7 @@ function loadFromHistoryAndDisplay(data) {
 document.addEventListener('DOMContentLoaded', () => {
     // Render History
     renderHistory('recentScansContainer', 'historyList', loadFromHistoryAndDisplay);
+    initAuth();
 
     if (imageUpload) {
         imageUpload.addEventListener('change', handleImageUpload);

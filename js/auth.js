@@ -1,4 +1,4 @@
-import { signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+import { signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 import { auth, googleProvider } from "./firebase-config.js";
 import { syncLocalHistoryToCloud, loadCloudHistory } from "./cloud_storage.js";
 import { renderHistory, loadFromHistory } from "./history.js";
