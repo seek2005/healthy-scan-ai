@@ -96,40 +96,49 @@ router.post('/analyze-image', async (req, res) => {
         ]);
 
         const response = await result.response;
+
+        const prompt = `
+        Analyze this food product image and ensure strict JSON format output.
+        Identify:
+        1. Product Name
+        2. Key Nutrients (Calories, Sugar, Sodium, Protein, Fat) with values.
+        3. Ingredients list.
+        4. Health Analysis (3 positive points, 3 negative points).
+        5. A health score (0-100).
+        6. Best healthier alternatives.
+        7. Allergens.
+
+        Return ONLY raw JSON. No markdown.
+        Schema:
+        {
+          "productName": "string",
+          "nutrients": { "calories": "val", "sugar": "val", "sodium": "val", "protein": "val", "fat": "val" },
+          "ingredients": ["string"],
+          "analysis": { "positives": ["string"], "negatives": ["string"] },
+          "score": number,
+          "alternatives": ["string"],
+          "allergens": ["string"]
+        }
+        `;
+
+        const imageParts = [
+            {
+                inlineData: {
+                    data: image,
+                    mimeType: mimeType || "image/jpeg"
+                }
+            }
+        ];
+
+        // Use the fallback function
+        const result = await generateContentWithFallback(prompt, imageParts);
+        const response = await result.response;
         const text = response.text();
-        console.log("--- DEBUG: Raw AI Response ---");
-        console.log(text);
-        console.log("------------------------------");
 
-        const cleaned = cleanJSON(text);
-        if (!cleaned) throw new Error("Failed to parse JSON from AI response");
+        const jsonData = cleanJSON(text);
+        if (!jsonData) throw new Error("Failed to parse AI response");
 
-        const data = JSON.parse(cleaned);
-
-        // Robust parsing helper for potential string values like "20g"
-        const parseNutrient = (val) => {
-            if (typeof val === 'number') return val;
-            if (typeof val === 'string') return parseFloat(val.replace(/[^0-9.]/g, '')) || 0;
-            return 0;
-        };
-
-        // Ensure extracted_nutrients exists and has valid numbers
-        if (data.extracted_nutrients) {
-            data.extracted_nutrients.sugar_g = parseNutrient(data.extracted_nutrients.sugar_g);
-            data.extracted_nutrients.sodium_mg = parseNutrient(data.extracted_nutrients.sodium_mg);
-            data.extracted_nutrients.sat_fat_g = parseNutrient(data.extracted_nutrients.sat_fat_g);
-        }
-
-        // Calculate portion analysis programmatically
-        if (data.extracted_nutrients) {
-            data.portion_analysis = calculatePortionAnalysis(
-                data.extracted_nutrients.sugar_g,
-                data.extracted_nutrients.sodium_mg,
-                data.extracted_nutrients.sat_fat_g
-            );
-        }
-
-        res.json(data);
+        res.json(jsonData);
 
     } catch (error) {
         console.error('Image Analysis Error:', error);
