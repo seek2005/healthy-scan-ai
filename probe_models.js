@@ -17,7 +17,8 @@ const candidates = [
 
 async function probe() {
     console.log("--- STARTING MODEL PROBE ---");
-    const key = process.env.GEMINI_API_KEY;
+    // Hardcoded key for diagnosis only
+    const key = "AIzaSyDvCwE6fY1xZIhLJEbc-0rLm_25o-bPFOA";
     if (!key) {
         console.error("CRITICAL: GEMINI_API_KEY not found in env!");
         return;
