@@ -16,8 +16,8 @@ app.use(express.static('.')); // Serve static files from current directory
 
 // Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-// Using gemini-1.5-flash - Fastest model, enabled by Tier 1 API Key
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+// Using gemini-pro (Stable) - Guaranteed to work with Tier 1 Key
+const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
 // Helper to clean JSON response
 function cleanJSON(text) {
