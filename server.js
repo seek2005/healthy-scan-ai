@@ -16,8 +16,26 @@ app.use(express.static('.')); // Serve static files from current directory
 
 // Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-// Using gemini-1.5-flash - Enabled by Tier 1 Key + API Activation
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+// Helper to try multiple models for robustness
+const MODELS = ["gemini-1.5-flash", "gemini-1.5-flash-001", "gemini-pro", "gemini-1.0-pro"];
+
+async function generateContentWithFallback(prompt, imageParts) {
+    let lastError = null;
+    for (const modelName of MODELS) {
+        try {
+            console.log(`Trying model: ${modelName}`);
+            const model = genAI.getGenerativeModel({ model: modelName });
+            const result = await model.generateContent([prompt, ...imageParts]);
+            return result;
+        } catch (error) {
+            console.error(`Model ${modelName} failed: ${error.message}`);
+            lastError = error;
+            // Continue to next model
+        }
+    }
+    throw new Error(`All models failed. Last error: ${lastError?.message}`);
+}
 
 // Helper to clean JSON response
 function cleanJSON(text) {
@@ -63,39 +81,6 @@ router.post('/analyze-image', async (req, res) => {
     try {
         const { image, mimeType } = req.body;
         if (!image) return res.status(400).json({ error: 'No image provided' });
-
-        const prompt = `You are a nutritionist AI. Analyze this nutrition label. 
-        1. Identify product. 
-        2. Summarize health value. 
-        3. Analyze the product for "Positives" (Health benefits, good nutrients) and "Negatives" (High sugar, additives, processing).
-        4. EXTRACT the exact nutrient values:
-           - **SUGAR**: Look for "Total Sugars". ALWAYS use the "Per Container" or "Per Package" column if available. If not, use the LARGEST number found. (e.g. if 20g and 46g, use 46).
-           - **SODIUM**: Look for "Sodium". Use "Per Container" or LARGEST value.
-           - **SAT FAT**: Look for "Saturated Fat". Use "Per Container" or LARGEST value.
-        5. List ALL ingredients found. Provide a short description (max 10 words) for EACH. Mark if harmful.
-        6. Suggest REAL US market alternative product. 
-        CRITICAL: Output ONLY raw JSON in English. No intro text.
-        { 
-          "summary": "string (use **bold** for emphasis)", 
-          "analysis": {
-              "negatives": [ { "title": "string (e.g. High Sugar)", "value": "string (e.g. 38g)", "description": "string (short explanation)" } ],
-              "positives": [ { "title": "string (e.g. Protein)", "value": "string (e.g. 10g)", "description": "string" } ]
-          },
-          "extracted_nutrients": { "sugar_g": number, "sodium_mg": number, "sat_fat_g": number },
-          "allergens": [
-            { "name": "string", "severity": "string (Low/Medium/High)", "description": "string" }
-          ],
-          "ingredients_list": [{"name": "string", "is_harmful": boolean, "description": "string"}],
-          "alternative": { "name": "string", "brand": "string", "score": "string", "reason": "string", "search_term": "string (optimized for Amazon search)" } 
-        }`;
-
-
-        const result = await model.generateContent([
-            prompt,
-            { inlineData: { data: image, mimeType: mimeType || 'image/jpeg' } }
-        ]);
-
-        const response = await result.response;
 
         const prompt = `
         Analyze this food product image and ensure strict JSON format output.
@@ -180,24 +165,13 @@ router.post('/analyze-barcode', async (req, res) => {
         };
 
         // 2. EXTRACT NUTRIENTS DIRECTLY (Hard Data > AI Guess)
-        // Prefer 'value per serving' if available, else 'per 100g'
         const getNutrient = (key) => {
             const n = product.nutriments;
-            // Try explicit serving first, then 100g, then generic value
             return n[`${key}_serving`] || n[`${key}_100g`] || n[key] || 0;
         };
 
-        const sugarG = getNutrient('sugars');
-        const sodiumMg = getNutrient('sodium') * 1000; // OFF usually returns sodium in grams? Check this.
-        // Wait, OFF returns sodium in grams/100g usually, or unit specified. 
-        // Let's use the explicit unit check if possible, to be safe assume OFF follows standards (grams for macros, varies for micro).
-        // Actually, let's look at the raw data structure usually: 'sodium_100g' is in grams. 'sodium_serving' is in grams.
-        // My limit logic expects mg for sodium. So I need to multiply by 1000.
-
-        // Re-evaluating sodium: OFF 'sodium' is usually in Grams. My daily limit is 2300mg (2.3g).
-        // So yes, need to convert to mg.
         const sodiumVal = (product.nutriments.sodium_value || product.nutriments.sodium || 0);
-        const sodiumUnit = product.nutriments.sodium_unit || 'g'; // Default to grams if missing
+        const sodiumUnit = product.nutriments.sodium_unit || 'g';
 
         let finalSodiumMg = sodiumVal;
         if (sodiumUnit === 'g') finalSodiumMg = sodiumVal * 1000;
@@ -233,7 +207,8 @@ router.post('/analyze-barcode', async (req, res) => {
           "alternative": { "name": "string", "brand": "string", "score": "string", "reason": "string", "search_term": "string" } 
         }`;
 
-        const result = await model.generateContent(prompt);
+        // Use Fallback here too - pass empty array for imageParts
+        const result = await generateContentWithFallback(prompt, []);
         const response = await result.response;
         const text = response.text();
 
