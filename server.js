@@ -28,7 +28,8 @@ const genAI = new GoogleGenerativeAI(key ? key.trim() : "");
 
 // Helper to try multiple models for robustness
 // precise order: experimental (newest), flash (fastest), stable (v1 std), legacy
-const MODELS = ["gemini-2.0-flash-exp", "gemini-1.5-flash", "gemini-1.5-flash-001", "gemini-1.5-pro", "gemini-pro", "gemini-1.0-pro"];
+// Based on confirmed available models from debug endpoint (Dec 2025)
+const MODELS = ["gemini-2.0-flash", "gemini-2.0-flash-exp", "gemini-flash-latest", "gemini-pro-latest", "gemini-2.5-flash"];
 
 const fetch = require('node-fetch'); // Ensure fetch is available if old node, but node 18+ has it native. Assuming native or implied.
 
