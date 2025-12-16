@@ -114,29 +114,30 @@ router.post('/analyze-image', async (req, res) => {
         const { image, mimeType } = req.body;
         if (!image) return res.status(400).json({ error: 'No image provided' });
 
-        const prompt = `
-        Analyze this food product image and ensure strict JSON format output.
-        Identify:
-        1. Product Name
-        2. Key Nutrients (Calories, Sugar, Sodium, Protein, Fat) with values.
-        3. Ingredients list.
-        4. Health Analysis (3 positive points, 3 negative points).
-        5. A health score (0-100).
-        6. Best healthier alternatives.
-        7. Allergens.
-
-        Return ONLY raw JSON. No markdown.
-        Schema:
-        {
-          "productName": "string",
-          "nutrients": { "calories": "val", "sugar": "val", "sodium": "val", "protein": "val", "fat": "val" },
-          "ingredients": ["string"],
-          "analysis": { "positives": ["string"], "negatives": ["string"] },
-          "score": number,
-          "alternatives": ["string"],
-          "allergens": ["string"]
-        }
-        `;
+        const prompt = `You are a nutritionist AI. Analyze this nutrition label. 
+        1. Identify product. 
+        2. Summarize health value. 
+        3. Analyze the product for "Positives" (Health benefits, good nutrients) and "Negatives" (High sugar, additives, processing).
+        4. EXTRACT the exact nutrient values:
+           - **SUGAR**: Look for "Total Sugars". ALWAYS use the "Per Container" or "Per Package" column if available. If not, use the LARGEST number found. (e.g. if 20g and 46g, use 46).
+           - **SODIUM**: Look for "Sodium". Use "Per Container" or LARGEST value.
+           - **SAT FAT**: Look for "Saturated Fat". Use "Per Container" or LARGEST value.
+        5. List ALL ingredients found. Provide a short description (max 10 words) for EACH. Mark if harmful.
+        6. Suggest REAL US market alternative product. 
+        CRITICAL: Output ONLY raw JSON in English. No intro text.
+        { 
+          "summary": "string (use **bold** for emphasis)", 
+          "analysis": {
+              "negatives": [ { "title": "string (e.g. High Sugar)", "value": "string (e.g. 38g)", "description": "string (short explanation)" } ],
+              "positives": [ { "title": "string (e.g. Protein)", "value": "string (e.g. 10g)", "description": "string" } ]
+          },
+          "extracted_nutrients": { "sugar_g": number, "sodium_mg": number, "sat_fat_g": number },
+          "allergens": [
+            { "name": "string", "severity": "string (Low/Medium/High)", "description": "string" }
+          ],
+          "ingredients_list": [{"name": "string", "is_harmful": boolean, "description": "string"}],
+          "alternative": { "name": "string", "brand": "string", "score": "string", "reason": "string", "search_term": "string (optimized for Amazon search)" } 
+        }`;
 
         const imageParts = [
             {
@@ -155,7 +156,18 @@ router.post('/analyze-image', async (req, res) => {
         const jsonData = cleanJSON(text);
         if (!jsonData) throw new Error("Failed to parse AI response");
 
-        res.json(jsonData);
+        const data = JSON.parse(jsonData);
+
+        // Calculate portion analysis programmatically if nutrients exist
+        if (data.extracted_nutrients) {
+            data.portion_analysis = calculatePortionAnalysis(
+                data.extracted_nutrients.sugar_g,
+                data.extracted_nutrients.sodium_mg,
+                data.extracted_nutrients.sat_fat_g
+            );
+        }
+
+        res.json(data);
 
     } catch (error) {
         console.error('Image Analysis Error:', error);
