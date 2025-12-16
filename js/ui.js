@@ -233,25 +233,32 @@ export function displayResults(data) {
             if (headerIcon) headerIcon.className = 'p-2 md:p-3 bg-white text-orange-500 rounded-xl shadow-sm';
         }
 
+
+        const SHORT_STATUS = {
+            "Recommended": "Rec.",
+            "High": "High",
+            "Excessive": "Bad"
+        };
+
         let rows = '';
         if (data.portion_analysis) {
             for (const [group, nutrients] of Object.entries(data.portion_analysis)) {
                 rows += `
     <tr class="group hover:bg-white/50 transition-colors border-b border-orange-100 last:border-0">
-                    <td class="py-2 md:py-4 font-bold text-gray-800 capitalize pl-1 text-xs md:text-base w-1/4 break-words">${group}</td>
+                    <td class="py-2 md:py-4 font-bold text-gray-800 capitalize pl-1 text-xs md:text-base w-1/4 break-words">${group.replace('Children', 'Child').replace('Adults', 'Adult').replace('Seniors', 'Senior')}</td>
                     <td class="py-2 md:py-4 text-center w-1/4">
                         <span class="px-2 py-1 rounded-full text-[10px] md:text-xs font-bold ${getColorClass(nutrients.sugar)} block w-full truncate">
-                            ${nutrients.sugar}
+                            ${SHORT_STATUS[nutrients.sugar] || nutrients.sugar}
                         </span>
                     </td>
                     <td class="py-2 md:py-4 text-center w-1/4">
                         <span class="px-2 py-1 rounded-full text-[10px] md:text-xs font-bold ${getColorClass(nutrients.sodium)} block w-full truncate">
-                            ${nutrients.sodium}
+                            ${SHORT_STATUS[nutrients.sodium] || nutrients.sodium}
                         </span>
                     </td>
                     <td class="py-2 md:py-4 text-center w-1/4">
                         <span class="px-2 py-1 rounded-full text-[10px] md:text-xs font-bold ${getColorClass(nutrients.saturated_fat)} block w-full truncate">
-                            ${nutrients.saturated_fat}
+                            ${SHORT_STATUS[nutrients.saturated_fat] || nutrients.saturated_fat}
                         </span>
                     </td>
                 </tr>`;

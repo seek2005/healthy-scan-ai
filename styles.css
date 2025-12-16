@@ -117,3 +117,22 @@ body {
 .hover-jump:hover {
     transform: translateY(-8px) scale(1.02);
 }
+
+/* Mobile Tooltip Adjustment */
+@media (max-width: 768px) {
+    .tooltip-bubble {
+        bottom: auto;
+        top: 140%;
+        transform: translateX(-50%) translateY(-10px);
+    }
+
+    .tooltip-bubble::after {
+        top: auto;
+        bottom: 100%;
+        border-color: transparent transparent white transparent;
+    }
+
+    .group:hover .tooltip-bubble {
+        transform: translateX(-50%) translateY(0);
+    }
+}
