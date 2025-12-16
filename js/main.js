@@ -109,7 +109,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Expose functions to window for HTML onclick compatibility
 window.toggleMobileMenu = toggleMobileMenu;
-window.switchTab = switchTab;
+window.toggleMobileMenu = toggleMobileMenu;
+window.switchTab = (tabName) => {
+    switchTab(tabName);
+    if (tabName === 'history') {
+        renderHistory('history-grid');
+    }
+};
 window.startScan = startScan;
 window.startBarcodeScan = startBarcodeScan;
 window.stopBarcodeScan = stopBarcodeScan;
