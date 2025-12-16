@@ -18,14 +18,20 @@ app.use(express.static('.')); // Serve static files from current directory
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 // Helper to try multiple models for robustness
-const MODELS = ["gemini-1.5-flash", "gemini-1.5-flash-001", "gemini-pro", "gemini-1.0-pro"];
+const MODELS = ["gemini-1.5-flash", "gemini-1.5-flash-001", "gemini-1.5-flash-8b", "gemini-pro", "gemini-1.0-pro", "gemini-pro-vision"];
 
 async function generateContentWithFallback(prompt, imageParts) {
     let lastError = null;
     for (const modelName of MODELS) {
         try {
             console.log(`Trying model: ${modelName}`);
-            const model = genAI.getGenerativeModel({ model: modelName });
+            // Force API version v1beta (default) or try v1? 
+            // Let's try explicit v1beta first as it has widest support, 
+            // BUT if that's failing, maybe v1 is key.
+            // Actually, let's try WITHOUT specific version first (default), which we did.
+            // The error said `v1beta`.
+            // Let's try forcing `v1` effectively.
+            const model = genAI.getGenerativeModel({ model: modelName }, { apiVersion: 'v1' });
             const result = await model.generateContent([prompt, ...imageParts]);
             return result;
         } catch (error) {
