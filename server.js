@@ -15,32 +15,36 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.static('.')); // Serve static files from current directory
 
 // Initialize Gemini
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+// Debug: Log key suffix to ensure correct key is loaded
+const key = process.env.GEMINI_API_KEY;
+if (key) {
+    console.log(`[DEBUG] Loaded API Key ending in: ...${key.slice(-4)}`);
+} else {
+    console.error("[CRITICAL] No API Key found in environment variables!");
+}
+
+const genAI = new GoogleGenerativeAI(key);
 
 // Helper to try multiple models for robustness
-const MODELS = ["gemini-1.5-flash", "gemini-1.5-flash-001", "gemini-1.5-flash-8b", "gemini-pro", "gemini-1.0-pro", "gemini-pro-vision"];
+const MODELS = ["gemini-1.5-flash", "gemini-1.5-flash-001", "gemini-1.5-flash-latest", "gemini-1.5-flash-8b", "gemini-pro", "gemini-1.0-pro"];
 
 async function generateContentWithFallback(prompt, imageParts) {
-    let lastError = null;
+    let errors = [];
     for (const modelName of MODELS) {
         try {
             console.log(`Trying model: ${modelName}`);
-            // Force API version v1beta (default) or try v1? 
-            // Let's try explicit v1beta first as it has widest support, 
-            // BUT if that's failing, maybe v1 is key.
-            // Actually, let's try WITHOUT specific version first (default), which we did.
-            // The error said `v1beta`.
-            // Let's try forcing `v1` effectively.
-            const model = genAI.getGenerativeModel({ model: modelName }, { apiVersion: 'v1' });
+            // Use v1beta again as default, since v1 failed for vision. 
+            // Most valid models are on v1beta.
+            const model = genAI.getGenerativeModel({ model: modelName });
             const result = await model.generateContent([prompt, ...imageParts]);
             return result;
         } catch (error) {
             console.error(`Model ${modelName} failed: ${error.message}`);
-            lastError = error;
+            errors.push(`${modelName}: ${error.message}`);
             // Continue to next model
         }
     }
-    throw new Error(`All models failed. Last error: ${lastError?.message}`);
+    throw new Error(`All models failed. Details: ${errors.join(' | ')}`);
 }
 
 // Helper to clean JSON response
