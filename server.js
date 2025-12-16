@@ -23,25 +23,28 @@ if (key) {
     console.error("[CRITICAL] No API Key found in environment variables!");
 }
 
-const genAI = new GoogleGenerativeAI(key);
+// Sanitize key just in case
+const genAI = new GoogleGenerativeAI(key ? key.trim() : "");
 
 // Helper to try multiple models for robustness
-const MODELS = ["gemini-1.5-flash", "gemini-1.5-flash-001", "gemini-1.5-flash-latest", "gemini-1.5-flash-8b", "gemini-pro", "gemini-1.0-pro"];
+// precise order: experimental (newest), flash (fastest), stable (v1 std), legacy
+const MODELS = ["gemini-2.0-flash-exp", "gemini-1.5-flash", "gemini-1.5-flash-001", "gemini-1.5-pro", "gemini-pro", "gemini-1.0-pro"];
 
 async function generateContentWithFallback(prompt, imageParts) {
     let errors = [];
     for (const modelName of MODELS) {
         try {
             console.log(`Trying model: ${modelName}`);
-            // Use v1beta again as default, since v1 failed for vision. 
-            // Most valid models are on v1beta.
-            const model = genAI.getGenerativeModel({ model: modelName });
+            // Force API version v1 (Stable) to avoid v1beta 404s on paid keys?
+            const model = genAI.getGenerativeModel({ model: modelName }, { apiVersion: 'v1' });
             const result = await model.generateContent([prompt, ...imageParts]);
             return result;
         } catch (error) {
             console.error(`Model ${modelName} failed: ${error.message}`);
             errors.push(`${modelName}: ${error.message}`);
-            // Continue to next model
+
+            // If v1 fails, try v1beta as fallback for this specific model? 
+            // Manual retry logic for version mismatch could go here but let's stick to global switch first.
         }
     }
     throw new Error(`All models failed. Details: ${errors.join(' | ')}`);
