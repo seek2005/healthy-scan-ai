@@ -30,13 +30,15 @@ const genAI = new GoogleGenerativeAI(key ? key.trim() : "");
 // precise order: experimental (newest), flash (fastest), stable (v1 std), legacy
 const MODELS = ["gemini-2.0-flash-exp", "gemini-1.5-flash", "gemini-1.5-flash-001", "gemini-1.5-pro", "gemini-pro", "gemini-1.0-pro"];
 
+const fetch = require('node-fetch'); // Ensure fetch is available if old node, but node 18+ has it native. Assuming native or implied.
+
 async function generateContentWithFallback(prompt, imageParts) {
     let errors = [];
     for (const modelName of MODELS) {
         try {
             console.log(`Trying model: ${modelName}`);
-            // Force API version v1 (Stable) to avoid v1beta 404s on paid keys?
-            const model = genAI.getGenerativeModel({ model: modelName }, { apiVersion: 'v1' });
+            // Reverting to default (v1beta) which supports the widest range of new models
+            const model = genAI.getGenerativeModel({ model: modelName });
             const result = await model.generateContent([prompt, ...imageParts]);
             return result;
         } catch (error) {
@@ -49,6 +51,22 @@ async function generateContentWithFallback(prompt, imageParts) {
     }
     throw new Error(`All models failed. Details: ${errors.join(' | ')}`);
 }
+
+// DEBUG ENDPOINT TO LIST MODELS
+app.get('/debug-models', async (req, res) => {
+    try {
+        const key = process.env.GEMINI_API_KEY;
+        // Direct REST call to see what the API sees
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
+        const data = await response.json();
+        res.json({
+            keySuffix: key ? key.slice(-4) : 'NONE',
+            apiResponse: data
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
 
 // Helper to clean JSON response
 function cleanJSON(text) {
