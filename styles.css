@@ -124,6 +124,9 @@ body {
         bottom: auto;
         top: 140%;
         transform: translateX(-50%) translateY(-10px);
+        font-size: 0.55rem;
+        padding: 0.3rem 0.6rem;
+        max-width: 140px;
     }
 
     .tooltip-bubble::after {
