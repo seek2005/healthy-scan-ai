@@ -236,6 +236,8 @@ export function displayResults(data) {
 
         const SHORT_STATUS = {
             "Recommended": "Rec.",
+            "Low": "Low",
+            "Medium": "Med.",
             "High": "High",
             "Excessive": "Bad"
         };

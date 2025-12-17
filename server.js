@@ -96,7 +96,7 @@ function calculatePortionAnalysis(sugarG, sodiumMg, satFatG) {
         const sodiumPct = Math.round((sod / limits.sodium) * 100);
         const fatPct = Math.round((f / limits.fat) * 100);
 
-        const getRec = (pct) => pct > 40 ? "Excessive" : pct > 20 ? "High" : "Recommended";
+        const getRec = (pct) => pct > 40 ? "High" : pct > 20 ? "Medium" : "Low";
 
         result[stage] = {
             sugar: getRec(sugarPct), // Client expects 'sugar'
