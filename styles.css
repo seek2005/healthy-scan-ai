@@ -109,6 +109,11 @@ body {
     transform: translateX(-50%) translateY(0);
 }
 
+/* Fix z-index stacking: Hovered item pops on top of siblings */
+.group.relative:hover {
+    z-index: 60;
+}
+
 /* Hover Jump Effect for Why Us cards */
 .hover-jump {
     transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
