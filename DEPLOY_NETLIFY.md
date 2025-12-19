@@ -29,7 +29,7 @@ Your `.env` file is hidden for security, so you must tell Netlify your API Key m
 3.  Go to **Site configuration** > **Environment variables**.
 4.  Add a new variable:
     *   **Key**: `GEMINI_API_KEY`
-    *   **Value**: `AIzaSyDcP4BKpDav-GP1N0H4xbwItU653M7k0BM`
+    *   **Value**: `(Paste your API Key here)`
 5.  **Redeploy** (Go to Deploys tab -> Trigger deploy) if needed, usually instant.
 
 ## Step 3: Test

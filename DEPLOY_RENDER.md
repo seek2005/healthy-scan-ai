@@ -33,7 +33,7 @@ You MUST add your API Key here.
 1.  Scroll down to **Environment Variables**.
 2.  Click **Add Environment Variable**.
 3.  **Key**: `GEMINI_API_KEY`
-4.  **Value**: `AIzaSyDcP4BKpDav-GP1N0H4xbwItU653M7k0BM`
+4.  **Value**: `(Paste your API Key here)`
 5.  Click **Create Web Service**.
 
 ## Done!
