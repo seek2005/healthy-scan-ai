@@ -11,10 +11,16 @@
     <script src="https://unpkg.com/heroicons@2.0.18/24/outline/esm/index.js" type="module"></script>
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
-    <!-- Firebase Compat Scripts (Standard & Robust) -->
-    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+    <!-- Firebase Modular SDK Import Map -->
+    <script type="importmap">
+    {
+      "imports": {
+        "firebase/app": "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js",
+        "firebase/auth": "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js",
+        "firebase/firestore": "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js"
+      }
+    }
+    </script>
 
     <link rel="stylesheet" href="styles.css">
 </head>
@@ -87,6 +93,10 @@
                     <!-- Dropdown -->
                     <div
                         class="absolute right-0 top-10 w-32 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden hidden group-hover:block animate-fade-in-up">
+                        <button id="settingsButton"
+                            class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 font-medium transition-colors">
+                            Settings
+                        </button>
                         <button id="logoutButton"
                             class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 font-medium transition-colors">
                             Logout
@@ -95,6 +105,7 @@
                 </div>
 
                 <!-- Mobile Menu Button -->
+                <span id="streakDisplay" class="hidden text-orange-500 font-bold animate-pulse mr-2">🔥 0</span>
                 <button onclick="toggleMobileMenu()"
                     class="md:hidden text-emerald-600 p-2 bg-emerald-50 rounded-lg focus:outline-none active:bg-emerald-100">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
@@ -350,6 +361,68 @@
                         </div>
                         <div id="reader" class="w-full bg-black h-[350px]"></div>
                         <p class="text-gray-500 font-medium p-4 text-center">Point camera at a barcode</p>
+                    </div>
+                </div>
+
+                <!-- Settings Modal -->
+                <div id="settingsModal"
+                    class="hidden fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+                    <div class="bg-white rounded-[2rem] p-6 md:p-8 max-w-md w-full shadow-2xl relative">
+                        <button onclick="document.getElementById('settingsModal').classList.add('hidden')"
+                            class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+                                stroke="currentColor" class="w-6 h-6">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                        <h2 class="text-2xl font-bold text-gray-900 mb-1">Your Profile</h2>
+                        <p class="text-gray-500 text-sm mb-6">Customize analysis for your needs.</p>
+
+                        <form id="settingsForm" class="space-y-6">
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-2">Primary Age Group</label>
+                                <select id="settingAgeGroup"
+                                    class="w-full p-3 rounded-xl border border-gray-200 bg-gray-50 focus:ring-2 focus:ring-emerald-500 outline-none">
+                                    <option value="Adults (19-50)">Adult (19-50)</option>
+                                    <option value="Children (4-8)">Child (4-8)</option>
+                                    <option value="Seniors (51+)">Senior (51+)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-3">Dietary Priorities</label>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <label
+                                        class="flex items-center gap-2 p-3 border border-gray-100 rounded-xl hover:bg-gray-50 cursor-pointer">
+                                        <input type="checkbox" value="Low Sugar"
+                                            class="w-5 h-5 text-emerald-600 rounded focus:ring-emerald-500 border-gray-300">
+                                        <span class="text-sm font-medium text-gray-700">Low Sugar</span>
+                                    </label>
+                                    <label
+                                        class="flex items-center gap-2 p-3 border border-gray-100 rounded-xl hover:bg-gray-50 cursor-pointer">
+                                        <input type="checkbox" value="Low Sodium"
+                                            class="w-5 h-5 text-emerald-600 rounded focus:ring-emerald-500 border-gray-300">
+                                        <span class="text-sm font-medium text-gray-700">Low Sodium</span>
+                                    </label>
+                                    <label
+                                        class="flex items-center gap-2 p-3 border border-gray-100 rounded-xl hover:bg-gray-50 cursor-pointer">
+                                        <input type="checkbox" value="Keto"
+                                            class="w-5 h-5 text-emerald-600 rounded focus:ring-emerald-500 border-gray-300">
+                                        <span class="text-sm font-medium text-gray-700">Keto</span>
+                                    </label>
+                                    <label
+                                        class="flex items-center gap-2 p-3 border border-gray-100 rounded-xl hover:bg-gray-50 cursor-pointer">
+                                        <input type="checkbox" value="Vegan"
+                                            class="w-5 h-5 text-emerald-600 rounded focus:ring-emerald-500 border-gray-300">
+                                        <span class="text-sm font-medium text-gray-700">Vegan</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="pt-2">
+                                <button type="submit"
+                                    class="w-full py-3.5 bg-gray-900 text-white font-bold rounded-xl shadow-lg hover:bg-gray-800 hover:-translate-y-0.5 transition-all">Save
+                                    Preferences</button>
+                            </div>
+                        </form>
                     </div>
                 </div>
                 <div class="mt-16 text-center text-gray-400 text-sm font-medium">© HealthyScanAI by Josue Torres</div>

@@ -1,17 +1,28 @@
 import { db } from "./firebase-config.js";
-import { getHistory, saveToHistory, renderHistory } from "./history.js";
+import { collection, doc, addDoc, getDocs, orderBy, query, serverTimestamp, getDoc, setDoc } from "firebase/firestore";
+import { getHistory, renderHistory } from "./history.js";
 
 // Save a single scan to Cloud Firestore
 export async function saveScanToCloud(scanData, user) {
     if (!user) return;
     try {
-        // Compat: db.collection().add()
-        const historyRef = db.collection("users").doc(user.uid).collection("history");
-        await historyRef.add({
+        const historyRef = collection(db, "users", user.uid, "history");
+        await addDoc(historyRef, {
             ...scanData,
-            timestamp: firebase.firestore.FieldValue.serverTimestamp() // Use global FieldValue
+            timestamp: serverTimestamp()
         });
         console.log("Scan saved to cloud!");
+
+        // Update Streak
+        const newStreak = await updateStreak(user);
+        if (newStreak) {
+            const streakEl = document.getElementById('streakDisplay');
+            if (streakEl) {
+                streakEl.innerHTML = `🔥 ${newStreak}`;
+                streakEl.classList.remove('hidden');
+            }
+        }
+
     } catch (e) {
         console.error("Error adding document: ", e);
     }
@@ -26,38 +37,26 @@ export async function syncLocalHistoryToCloud(user) {
         return;
     }
 
-    const historyRef = db.collection("users").doc(user.uid).collection("history");
+    const historyRef = collection(db, "users", user.uid, "history");
 
     // 1. Get existing cloud history to avoid duplicates (basic check)
-    // Compat: .get()
-    const snapshot = await historyRef.get();
+    const snapshot = await getDocs(historyRef);
     const cloudScans = [];
     snapshot.forEach(doc => {
         cloudScans.push(doc.data());
     });
 
-    // Simple duplicate check based on product name/timestamp approx? 
-    // For now, just upload everything local that isn't obviously there. 
-    // Actually, to be safe and simple: Upload local items that don't match strict criteria?
-    // Let's just upload all local items for now, assuming user wants them kept.
-    // Optimization: In real app, check ID or hash.
-
     for (const item of localHistory) {
         // Add to cloud
-        // We use add() to auto-generate ID
         try {
-            await historyRef.add({
+            await addDoc(historyRef, {
                 ...item,
-                timestamp: item.timestamp || firebase.firestore.FieldValue.serverTimestamp()
+                timestamp: item.timestamp || serverTimestamp()
             });
         } catch (e) {
             console.error("Error syncing item:", e);
         }
     }
-
-    // Clear local storage? No, we will enable "cloud mode" effectively.
-    // But usually we want to clear local and replace with cloud source of truth.
-    // localStorage.removeItem('scanHistory'); 
 
     // Load fresh from cloud
     await loadCloudHistory(user);
@@ -69,8 +68,9 @@ export async function loadCloudHistory(user) {
     if (!user) return;
 
     try {
-        const historyRef = db.collection("users").doc(user.uid).collection("history");
-        const querySnapshot = await historyRef.orderBy("timestamp", "desc").get();
+        const historyRef = collection(db, "users", user.uid, "history");
+        const q = query(historyRef, orderBy("timestamp", "desc"));
+        const querySnapshot = await getDocs(q);
 
         const cloudHistory = [];
         querySnapshot.forEach((doc) => {
@@ -88,9 +88,73 @@ export async function loadCloudHistory(user) {
         localStorage.setItem('scanHistory', JSON.stringify(cloudHistory));
 
         // Re-render
-        renderHistory();
+        renderHistory("history-grid");
+
+        // Load Streak too
+        await loadStreak(user);
 
     } catch (e) {
         console.error("Error loading cloud history:", e);
+    }
+}
+
+// Gamification: Update Streak
+export async function updateStreak(user) {
+    if (!user) return;
+    const streakRef = doc(db, "users", user.uid, "gamification", "streak");
+    const today = new Date().toISOString().split('T')[0];
+
+    try {
+        const docSnap = await getDoc(streakRef);
+        let currentStreak = 1;
+
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            const lastDate = data.lastScanDate;
+
+            if (lastDate === today) {
+                return data.currentStreak; // Already scanned today, return current
+            }
+
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+            if (lastDate === yesterdayStr) {
+                currentStreak = (data.currentStreak || 0) + 1;
+            } else {
+                currentStreak = 1; // Broken streak
+            }
+        }
+
+        await setDoc(streakRef, {
+            currentStreak: currentStreak,
+            lastScanDate: today,
+            lastUpdated: serverTimestamp()
+        });
+
+        console.log(`Streak updated: ${currentStreak} days 🔥`);
+        return currentStreak;
+
+    } catch (e) {
+        console.error("Error updating streak:", e);
+    }
+}
+
+export async function loadStreak(user) {
+    if (!user) return;
+    try {
+        const streakRef = doc(db, "users", user.uid, "gamification", "streak");
+        const docSnap = await getDoc(streakRef);
+        if (docSnap.exists()) {
+            const streak = docSnap.data().currentStreak || 0;
+            const streakEl = document.getElementById('streakDisplay');
+            if (streakEl) {
+                streakEl.innerHTML = `🔥 ${streak}`;
+                streakEl.classList.remove('hidden');
+            }
+        }
+    } catch (e) {
+        console.error("Error loading streak:", e);
     }
 }

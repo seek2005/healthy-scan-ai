@@ -1,8 +1,9 @@
-export function getColorClass(val) {
-    if (!val) return 'bg-gray-100 text-gray-500';
-    const v = val.toLowerCase();
-    if (v.includes('low') || v.includes('safe') || v.includes('health') || v.includes('recommend')) return 'bg-emerald-100 text-emerald-700';
-    if (v.includes('moderate') || v.includes('limit')) return 'bg-yellow-100 text-yellow-700';
-    if (v.includes('high') || v.includes('excess') || v.includes('avoid')) return 'bg-red-100 text-red-700';
-    return 'bg-gray-100 text-gray-700';
+export function getColorClass(level) {
+    if (!level) return 'bg-gray-100 text-gray-800';
+    const l = String(level).toLowerCase();
+    if (l.includes('low') || l.includes('recommended') || l.includes('rec')) return 'bg-emerald-100 text-emerald-800';
+    if (l.includes('medium') || l.includes('med')) return 'bg-yellow-100 text-yellow-800';
+    if (l.includes('high')) return 'bg-orange-100 text-orange-800';
+    if (l.includes('excessive') || l.includes('bad')) return 'bg-red-100 text-red-800';
+    return 'bg-gray-100 text-gray-800';
 }

@@ -9,8 +9,10 @@ import {
     displayResults
 } from './ui.js';
 import { initAuth } from './auth.js';
+import { getCurrentProfile } from './profile.js';
 
 // Global State
+console.log("Main.js loaded!");
 let uploadedImageBase64 = null;
 let uploadedFileType = "image/jpeg";
 let html5QrcodeScanner = null;
@@ -42,7 +44,8 @@ async function startScan() {
     scanButton.innerHTML = 'Thinking...';
 
     try {
-        const data = await analyzeImage(uploadedImageBase64, uploadedFileType);
+        const userProfile = getCurrentProfile(); // Get loaded profile
+        const data = await analyzeImage(uploadedImageBase64, uploadedFileType, userProfile);
         displayResults(data);
         saveToHistory(data);
         showStatus(''); // Clear status or hiding it is handled in resetUI/ui
@@ -81,7 +84,8 @@ async function onScanSuccess(decodedText) {
     showStatus(`Found Barcode: ${decodedText}. Fetching data...`);
 
     try {
-        const data = await analyzeBarcode(decodedText);
+        const userProfile = getCurrentProfile();
+        const data = await analyzeBarcode(decodedText, userProfile);
         displayResults(data);
         saveToHistory(data);
         document.getElementById('statusMessage').classList.add('hidden');

@@ -1,8 +1,11 @@
 import { auth, googleProvider } from "./firebase-config.js";
+import { signInWithPopup, signOut, onAuthStateChanged } from "firebase/auth";
 import { syncLocalHistoryToCloud, loadCloudHistory } from "./cloud_storage.js";
-import { renderHistory, loadFromHistory } from "./history.js";
+import { initProfile, loadProfile } from "./profile.js";
+
 
 export function initAuth() {
+    initProfile(); // Setup listeners
     const loginBtn = document.getElementById('loginButton');
     const userProfile = document.getElementById('userProfile');
     const userAvatar = document.getElementById('userAvatar');
@@ -12,12 +15,11 @@ export function initAuth() {
     if (loginBtn) {
         loginBtn.addEventListener('click', async () => {
             try {
-                // Compat: auth.signInWithPopup(provider)
-                const result = await auth.signInWithPopup(googleProvider);
+                const result = await signInWithPopup(auth, googleProvider);
                 const user = result.user;
                 console.log("Logged in as:", user.displayName);
-                // Sync history after login
                 await syncLocalHistoryToCloud(user);
+                await loadProfile(user);
             } catch (error) {
                 console.error("Login failed:", error);
                 alert("Login Error: " + error.message);
@@ -29,10 +31,9 @@ export function initAuth() {
     if (logoutBtn) {
         logoutBtn.addEventListener('click', async () => {
             try {
-                // Compat: auth.signOut()
-                await auth.signOut();
+                await signOut(auth);
                 console.log("User signed out");
-                window.location.reload(); // Reload to clear cloud state
+                window.location.reload();
             } catch (error) {
                 console.error("Logout failed:", error);
             }
@@ -40,8 +41,7 @@ export function initAuth() {
     }
 
     // Auth State Listener
-    // Compat: auth.onAuthStateChanged(cb)
-    auth.onAuthStateChanged(async (user) => {
+    onAuthStateChanged(auth, async (user) => {
         if (user) {
             // User is signed in
             if (loginBtn) loginBtn.classList.add('hidden');
@@ -50,8 +50,9 @@ export function initAuth() {
                 userAvatar.src = user.photoURL || 'https://ui-avatars.com/api/?name=User';
             }
 
-            // Load cloud history
+            // Load cloud history and profile
             await loadCloudHistory(user);
+            await loadProfile(user);
         } else {
             // User is signed out
             if (loginBtn) loginBtn.classList.remove('hidden');
