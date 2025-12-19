@@ -1,57 +1,146 @@
-:root {
-    --border: #e5e7eb;
-    --muted: #64748b;
-}
-
-* {
-    box-sizing: border-box
-}
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 body {
-    font-family: system-ui, Segoe UI, Roboto, Inter, Arial, sans-serif;
-    margin: 0
+    font-family: 'Inter', sans-serif;
 }
 
-.topbar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px 16px;
-    border-bottom: 1px solid var(--border)
+/* Custom Animations */
+@keyframes gradient {
+    0% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+
+    100% {
+        background-position: 0% 50%;
+    }
 }
 
-.nav {
-    display: flex;
-    gap: 12px;
-    align-items: center
+.animate-gradient {
+    background: linear-gradient(-45deg, #ecfdf5, #d1fae5, #ccfbf1, #e0f2fe);
+    background-size: 400% 400%;
+    animation: gradient 15s ease infinite;
 }
 
-.container {
-    max-width: 960px;
-    margin: 24px auto;
-    padding: 0 16px
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
-.upload {
-    margin-top: 12px
+.animate-fade-in-up {
+    animation: fadeInUp 0.5s ease-out forwards;
 }
 
-.panel {
-    background: #f8fafc;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 12px;
-    overflow: auto
+.nav-glass {
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
 }
 
-.muted {
-    color: var(--muted);
-    font-size: .9rem
+.active-nav {
+    background-color: #059669;
+    /* emerald-600 */
+    color: white;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    font-weight: 700;
 }
 
-#scanner-root video {
-    width: 100%;
-    aspect-ratio: 16/9;
-    background: #000;
-    border-radius: 8px
+/* Scrollbar Hide */
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+/* Tooltip 'Thought Bubble' Style */
+.tooltip-bubble {
+    position: absolute;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: white;
+    color: #374151;
+    /* gray-700 */
+    padding: 0.4rem 0.8rem;
+    border-radius: 1rem;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    font-size: 0.65rem;
+    line-height: 1.25;
+    width: max-content;
+    max-width: 160px;
+    z-index: 50;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s, transform 0.2s;
+    transform: translateX(-50%) translateY(10px);
+}
+
+/* Triangle for the bubble */
+.tooltip-bubble::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -6px;
+    border-width: 6px;
+    border-style: solid;
+    border-color: white transparent transparent transparent;
+}
+
+/* Group hover trigger */
+.group:hover .tooltip-bubble {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+/* Fix z-index stacking: Hovered item pops on top of siblings */
+.group.relative:hover {
+    z-index: 60;
+}
+
+/* Hover Jump Effect for Why Us cards */
+.hover-jump {
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.hover-jump:hover {
+    transform: translateY(-8px) scale(1.02);
+}
+
+/* Mobile Tooltip Adjustment */
+@media (max-width: 768px) {
+    .tooltip-bubble {
+        bottom: auto;
+        top: 140%;
+        transform: translateX(-50%) translateY(-10px);
+        font-size: 0.55rem;
+        padding: 0.3rem 0.6rem;
+        max-width: 140px;
+    }
+
+    .tooltip-bubble::after {
+        top: auto;
+        bottom: 100%;
+        border-color: transparent transparent white transparent;
+    }
+
+    .group:hover .tooltip-bubble {
+        transform: translateX(-50%) translateY(0);
+    }
 }

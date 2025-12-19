@@ -1,55 +1,635 @@
-<!doctype html>
-<html lang="es">
+<!DOCTYPE html>
+<html lang="en">
 
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>HealthyScan AI — Escáner nutricional</title>
-    <meta name="description"
-        content="Escanea códigos de barras/QR y analiza etiquetas. Alternativas más saludables al instante.">
-    <meta property="og:title" content="HealthyScan AI" />
-    <meta property="og:description" content="Escáner nutricional con IA, seguro y rápido." />
-    <meta property="og:type" content="website" />
-    <meta property="og:image" content="/og.png" />
-    <meta name="twitter:card" content="summary_large_image">
-    <link rel="icon" href="/favicon.ico" />
-    <link rel="stylesheet" href="/styles.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Healthy Scan AI - Eat Smarter, Live Better.</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/heroicons@2.0.18/24/solid/esm/index.js" type="module"></script>
+    <script src="https://unpkg.com/heroicons@2.0.18/24/outline/esm/index.js" type="module"></script>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+
+    <!-- Firebase Compat Scripts (Standard & Robust) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+
+    <link rel="stylesheet" href="styles.css">
 </head>
 
-<body>
-    <header class="topbar">
-        <strong>HealthyScan AI</strong>
-        <nav class="nav">
-            <a href="#scanner">Scanner</a>
-            <a href="#about">About</a>
-            <button id="auth-btn" type="button">Login</button>
-        </nav>
-    </header>
+<body class="animate-gradient min-h-screen text-gray-700 selection:bg-emerald-200 selection:text-emerald-900 pb-16">
 
-    <main class="container">
-        <section id="scanner">
-            <h1>Ready to Analyze</h1>
-            <div id="scanner-root"></div>
+    <nav class="fixed top-0 left-0 right-0 z-50 nav-glass py-4">
+        <div class="container mx-auto max-w-6xl px-4 flex justify-between items-center">
+            <!-- Logo -->
+            <a href="#" onclick="switchTab('home')" class="flex items-center gap-3 group">
+                <div
+                    class="bg-gradient-to-tr from-emerald-500 to-teal-400 p-2 rounded-xl shadow-md group-hover:shadow-lg transition-all">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
+                        class="w-6 h-6 text-white">
+                        <path fill-rule="evenodd"
+                            d="M12.963 2.286a.75.75 0 00-1.071-.136 9.742 9.742 0 00-3.539 6.177 7.547 7.547 0 01-1.705-1.715.75.75 0 00-1.152-.082A9 9 0 1015.68 4.534a7.46 7.46 0 01-2.717-2.248zM15.75 14.25a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z"
+                            clip-rule="evenodd" />
+                    </svg>
+                </div>
+                <span
+                    class="text-2xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-emerald-700 to-teal-600 tracking-tight">
+                    HealthyScan AI
+                </span>
+            </a>
 
-            <div class="upload">
-                <label>Subir imagen de etiqueta:
-                    <input id="file-input" type="file" accept="image/*" capture="environment">
-                </label>
-                <p id="upload-msg" class="muted"></p>
+            <!-- Desktop Nav Pill Menu -->
+            <div
+                class="hidden md:flex items-center space-x-1 bg-gray-100/80 p-1.5 rounded-full backdrop-blur-md border border-gray-200">
+                <button onclick="switchTab('home')" id="nav-home"
+                    class="nav-btn active-nav text-sm font-bold px-5 py-2 rounded-full transition-all">Scanner</button>
+                <button onclick="switchTab('about')" id="nav-about"
+                    class="nav-btn text-gray-600 text-sm font-medium px-5 py-2 rounded-full hover:bg-gray-200/50 transition-all">About
+                    Us</button>
+                <button onclick="switchTab('prototype')" id="nav-prototype"
+                    class="nav-btn text-gray-600 text-sm font-medium px-5 py-2 rounded-full hover:bg-gray-200/50 transition-all">Features</button>
+                <button onclick="switchTab('history')" id="nav-history"
+                    class="nav-btn text-gray-600 text-sm font-medium px-5 py-2 rounded-full hover:bg-gray-200/50 transition-all">History</button>
+                <button onclick="switchTab('marketing')" id="nav-marketing"
+                    class="nav-btn text-gray-600 text-sm font-medium px-5 py-2 rounded-full hover:bg-gray-200/50 transition-all">Why
+                    Us?</button>
+                <button onclick="switchTab('guide')" id="nav-guide"
+                    class="nav-btn text-gray-600 text-sm font-medium px-5 py-2 rounded-full hover:bg-gray-200/50 transition-all">Guide</button>
             </div>
 
-            <pre id="out" class="panel"></pre>
+            <div class="flex items-center gap-2">
+                <!-- Login Button -->
+                <button id="loginButton"
+                    class="px-4 py-2 bg-white/90 text-gray-700 hover:text-emerald-700 font-semibold rounded-xl text-sm transition-all shadow-sm hover:shadow-md flex items-center gap-2 border border-gray-100">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                        <path
+                            d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                            fill="#4285F4" />
+                        <path
+                            d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                            fill="#34A853" />
+                        <path
+                            d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                            fill="#FBBC05" />
+                        <path
+                            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                            fill="#EA4335" />
+                    </svg>
+                    <span>Login</span>
+                </button>
+
+                <!-- User Profile (Hidden by default) -->
+                <div id="userProfile" class="hidden flex items-center gap-2 relative group">
+                    <img id="userAvatar" src="" alt="User"
+                        class="w-9 h-9 rounded-full border-2 border-emerald-500 shadow-sm cursor-pointer">
+                    <!-- Dropdown -->
+                    <div
+                        class="absolute right-0 top-10 w-32 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden hidden group-hover:block animate-fade-in-up">
+                        <button id="logoutButton"
+                            class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 font-medium transition-colors">
+                            Logout
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Mobile Menu Button -->
+                <button onclick="toggleMobileMenu()"
+                    class="md:hidden text-emerald-600 p-2 bg-emerald-50 rounded-lg focus:outline-none active:bg-emerald-100">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+                        stroke="currentColor" class="w-7 h-7">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Mobile Menu (Hidden by default) -->
+        <div id="mobile-menu"
+            class="hidden md:hidden absolute top-20 left-4 right-4 bg-white p-4 rounded-3xl shadow-2xl border border-emerald-50 flex flex-col gap-2 z-50 animate-fade-in-up">
+            <button onclick="switchTab('home')"
+                class="mobile-nav-btn w-full text-left px-4 py-3 rounded-xl font-medium bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors">Scanner</button>
+            <button onclick="switchTab('about')"
+                class="mobile-nav-btn w-full text-left px-4 py-3 rounded-xl font-medium text-gray-600 hover:bg-gray-50 transition-colors">About
+                Us</button>
+            <button onclick="switchTab('prototype')"
+                class="mobile-nav-btn w-full text-left px-4 py-3 rounded-xl font-medium text-gray-600 hover:bg-gray-50 transition-colors">Features</button>
+            <button onclick="switchTab('history')"
+                class="mobile-nav-btn w-full text-left px-4 py-3 rounded-xl font-medium text-gray-600 hover:bg-gray-50 transition-colors">History</button>
+            <button onclick="switchTab('marketing')"
+                class="mobile-nav-btn w-full text-left px-4 py-3 rounded-xl font-medium text-gray-600 hover:bg-gray-50 transition-colors">Why
+                Us?</button>
+            <button onclick="switchTab('guide')"
+                class="mobile-nav-btn w-full text-left px-4 py-3 rounded-xl font-medium text-gray-600 hover:bg-gray-50 transition-colors">Guide</button>
+        </div>
+    </nav>
+
+    <div class="h-24 md:h-28"></div>
+
+    <div class="container mx-auto px-4 md:px-8 max-w-6xl">
+
+        <header id="main-header" class="text-center mb-8 md:mb-12">
+            <h1 class="text-4xl md:text-7xl font-extrabold text-gray-900 tracking-tight mb-4 leading-tight">
+                Eat Smarter, <br class="lg:hidden" />
+                <span
+                    class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 via-teal-500 to-cyan-600">Live
+                    Better.</span>
+            </h1>
+            <p class="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed font-medium">
+                Turn confusing nutrition labels into clear, actionable health insights instantly with the power of AI.
+            </p>
+        </header>
+
+        <!-- HISTORY TAB -->
+        <section id="tab-history" class="tab-content hidden max-w-6xl mx-auto">
+            <h2 class="text-5xl font-extrabold text-gray-900 text-center mb-16">Scan <span
+                    class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-500">History.</span>
+            </h2>
+            <div id="history-grid" class="grid md:grid-cols-2 gap-8">
+                <!-- Dynamic Comparisons will appear here -->
+            </div>
+            <div class="mt-8 text-center text-gray-400 text-sm font-medium">© HealthyScanAI by Josue Torres</div>
+        </section>
+        <section id="tab-home" class="tab-content">
+            <main class="max-w-3xl mx-auto w-full">
+
+                <!-- Main Input Card -->
+                <div id="mainInputCard"
+                    class="glass-panel rounded-[1.5rem] p-3 md:p-12 text-center border-dashed border-2 border-emerald-100 bg-white/60 shadow-xl relative overflow-hidden">
+
+                    <!-- Hidden File Input -->
+                    <input type="file" id="imageUpload" accept="image/*" capture="environment" class="hidden"
+                        onchange="previewImage(event)">
+
+                    <!-- Default View: Icon & Text -->
+                    <div id="defaultView" class="transition-all duration-300 py-4 md:py-6">
+                        <div class="flex flex-col md:flex-row items-center justify-center gap-6 mb-6 md:mb-8">
+                            <!-- Icon & Text Group -->
+                            <div class="flex items-center gap-3">
+                                <div
+                                    class="w-12 h-12 md:w-16 md:h-16 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center shadow-md">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
+                                        class="w-7 h-7 md:w-8 md:h-8">
+                                        <path
+                                            d="M5.625 1.5c-1.036 0-1.875.84-1.875 1.875v17.25c0 1.035.84 1.875 1.875 1.875h12.75c1.035 0 1.875-.84 1.875-1.875V12.75A3.75 3.75 0 0016.5 9h-1.875a1.875 1.875 0 01-1.875-1.875V5.25A3.75 3.75 0 009 1.5H5.625z" />
+                                        <path
+                                            d="M12.971 1.816A5.23 5.23 0 0114.25 5.25v1.875c0 .207.168.375.375.375H16.5a5.23 5.23 0 013.434 1.279 9.768 9.768 0 00-6.963-6.963z" />
+                                        <path
+                                            d="M10.5 11.25a.75.75 0 01.75-.75h6a.75.75 0 010 1.5h-6a.75.75 0 01-.75-.75zm0 3a.75.75 0 01.75-.75h6a.75.75 0 010 1.5h-6a.75.75 0 01-.75-.75zm0 3a.75.75 0 01.75-.75h6a.75.75 0 010 1.5h-6a.75.75 0 01-.75-.75zM6.75 11.25a.75.75 0 01.75-.75h.008a.75.75 0 01.75.75v.008a.75.75 0 01-.75.75H7.5a.75.75 0 01-.75-.75v-.008zm0 3a.75.75 0 01.75-.75h.008a.75.75 0 01.75.75v.008a.75.75 0 01-.75.75H7.5a.75.75 0 01-.75-.75v-.008zm0 3a.75.75 0 01.75-.75h.008a.75.75 0 01.75.75v.008a.75.75 0 01-.75.75H7.5a.75.75 0 01-.75-.75v-.008z" />
+                                    </svg>
+                                </div>
+                                <h3 class="text-xl md:text-4xl font-extrabold text-gray-900 tracking-tight text-left">
+                                    Ready to Analyze.</h3>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="flex flex-col sm:flex-row gap-3 justify-center max-w-lg mx-auto">
+                            <!-- Analyze Image Button (Triggers File Input) -->
+                            <button onclick="document.getElementById('imageUpload').click()"
+                                class="group relative flex-1 py-3 md:py-4 px-4 bg-emerald-600 text-white font-bold text-sm md:text-lg rounded-xl md:rounded-2xl shadow-lg shadow-emerald-200 hover:shadow-xl hover:bg-emerald-700 hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-2 active:scale-95">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
+                                    class="w-5 h-5 md:w-6 md:h-6">
+                                    <path d="M12 9a3.75 3.75 0 100 7.5A3.75 3.75 0 0012 9z" />
+                                    <path fill-rule="evenodd"
+                                        d="M9.344 3.071a4.954 4.954 0 015.312 0c.215.116.453.131.694.01 1.956-.99 4.318-.454 5.75 1.63 1.432 2.083 1.056 4.977-.853 6.643l-.935.816a.75.75 0 01-.89 1.116l-3.328-1.574a.75.75 0 01-.1-.08l-5.666 4.965a.75.75 0 11-.986-1.134l6.09-5.336-2.583-1.22a.75.75 0 01-.358-.934l.764-1.912a.75.75 0 01.996-.407l2.844 1.065a.75.75 0 001.037-.62 3.1 3.1 0 00-1.908-2.91L14.07 1.57a3.1 3.1 0 00-4.14 0L8.803 3.02a3.1 3.1 0 00-1.908 2.909c0 .77.275 1.488.75 2.064a.75.75 0 11-1.168.966 4.606 4.606 0 01-.983-2.617c0-1.745 1.01-3.292 2.593-4.01a.75.75 0 01.353-.087c.36 0 .694.135.946.37l.46-.224zM6.924 13.676a.75.75 0 01.722-.05l3.858 1.823 4.296-3.765a.75.75 0 11.986 1.135l-4.706 4.124a.75.75 0 01-.898.058l-3.774-1.784a.75.75 0 01-.376.126l-3.13 5.215a.75.75 0 11-1.286-.772l3.208-5.345a.75.75 0 011.1-.765z"
+                                        clip-rule="evenodd" />
+                                    <!-- Use a simpler bold camera icon for clarity -->
+                                    <path d="M12 15.75a3 3 0 100-6 3 3 0 000 6z" />
+                                    <path fill-rule="evenodd"
+                                        d="M1.5 8.25a3 3 0 013-3h1.5a3 3 0 003-3h6a3 3 0 003 3h1.5a3 3 0 013 3v9a3 3 0 01-3 3h-15a3 3 0 01-3-3v-9zM12 18.75a5.25 5.25 0 100-10.5 5.25 5.25 0 000 10.5z"
+                                        clip-rule="evenodd" />
+                                </svg>
+                                Analyze Image
+                            </button>
+
+                            <!-- Scan Barcode Button -->
+                            <button id="barcodeButton" onclick="startBarcodeScan()"
+                                class="group flex-1 py-3 md:py-4 px-4 bg-white border-2 border-emerald-100 text-gray-700 font-bold text-sm md:text-lg rounded-xl md:rounded-2xl shadow-sm hover:shadow-lg hover:border-emerald-500 hover:text-emerald-600 hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-2 active:scale-95">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
+                                    class="w-5 h-5 md:w-6 md:h-6">
+                                    <path fill-rule="evenodd"
+                                        d="M3 6a3 3 0 013-3h2.25a.75.75 0 010 1.5H6a1.5 1.5 0 00-1.5 1.5v2.25a.75.75 0 01-1.5 0V6zm0 12a3 3 0 003 3h2.25a.75.75 0 010 1.5H6a4.5 4.5 0 01-4.5-4.5v-2.25a.75.75 0 011.5 0V18zM18 3a3 3 0 013 3v2.25a.75.75 0 01-1.5 0V6a1.5 1.5 0 00-1.5-1.5h-2.25a.75.75 0 010-1.5H18zm3 12a.75.75 0 01.75.75V18a4.5 4.5 0 01-4.5 4.5h-2.25a.75.75 0 010-1.5H18a1.5 1.5 0 001.5-1.5v-2.25a.75.75 0 01.75-.75z"
+                                        clip-rule="evenodd" />
+                                    <path
+                                        d="M7.5 7.5a.75.75 0 01.75-.75h1.5a.75.75 0 01.75.75v9a.75.75 0 01-.75.75h-1.5a.75.75 0 01-.75-.75v-9zM13.5 7.5a.75.75 0 01.75-.75h1.5a.75.75 0 01.75.75v9a.75.75 0 01-.75.75h-1.5a.75.75 0 01-.75-.75v-9z" />
+                                    <!-- Add a "scan line" element to make it look active -->
+                                    <path d="M6 12a.75.75 0 01.75-.75h10.5a.75.75 0 010 1.5H6.75A.75.75 0 016 12z"
+                                        class="text-red-500" fill="red" />
+                                </svg>
+                                Scan Barcode
+                            </button>
+                        </div>
+                    </div>
+
+
+
+                    <!-- Image Preview View (Hidden Initially) -->
+                    <div id="previewView" class="hidden flex-col items-center animate-fade-in-up">
+                        <div class="relative w-full max-w-sm mx-auto mb-6 md:mb-8 group">
+                            <img id="imagePreview"
+                                class="w-full h-auto rounded-2xl shadow-2xl border-4 border-white object-cover max-h-[400px]"
+                                alt="Preview">
+                            <button onclick="resetUI()"
+                                class="absolute -top-3 -right-3 bg-white text-red-500 rounded-full p-2 shadow-lg hover:scale-110 transition-transform">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
+                                    class="w-6 h-6">
+                                    <path fill-rule="evenodd"
+                                        d="M5.47 5.47a.75.75 0 011.06 0L12 10.94l5.47-5.47a.75.75 0 111.06 1.06L13.06 12l5.47 5.47a.75.75 0 11-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 01-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 010-1.06z"
+                                        clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <button id="scanButton" onclick="startScan()"
+                            class="w-full max-w-sm py-3 md:py-4 bg-gradient-to-r from-emerald-600 to-teal-500 text-white font-bold text-lg md:text-xl rounded-2xl shadow-xl shadow-emerald-200 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+                                stroke="currentColor" class="w-6 h-6">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
+                            </svg>
+                            Start Analysis
+                        </button>
+                    </div>
+
+                    <div id="statusMessage"
+                        class="mt-6 hidden max-w-md mx-auto p-4 bg-blue-50/90 backdrop-blur-sm text-blue-700 text-sm rounded-xl text-center border border-blue-200 font-medium animate-pulse">
+                    </div>
+
+                    <!-- RESULTS CONTAINER INSIDE CARD -->
+                    <div id="resultsContainer" class="hidden flex-col gap-6 md:gap-8 w-full mt-6 md:mt-8 text-left">
+
+                        <!-- AI Product Analysis Section (New) -->
+                        <div id="productAnalysisContainer" class="hidden"></div>
+
+                        <!-- Allergen Alerts Section -->
+                        <div id="allergenContainer" class="hidden mb-6"></div>
+
+                        <div
+                            class="glass-panel rounded-[1.5rem] p-4 md:p-10 bg-white/90 overflow-hidden shadow-xl shadow-emerald-50/50 border-2 border-white">
+                            <h3
+                                class="text-lg md:text-2xl font-bold text-gray-900 mb-4 md:mb-6 flex items-center gap-2 md:gap-3">
+                                <div class="p-2 md:p-3 bg-white text-orange-500 rounded-xl shadow-sm">
+                                    <!-- Custom Age/Generations Icon -->
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
+                                        class="w-6 h-6 md:w-7 md:h-7">
+                                        <path
+                                            d="M4.5 9a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm6 0a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm6 0a1.5 1.5 0 110-3 1.5 1.5 0 010 3z" />
+                                        <path fill-rule="evenodd"
+                                            d="M1.5 14.25a3 3 0 013-3h.75a3 3 0 013 3V18a.75.75 0 01-1.5 0v-2.25H2.25V18a.75.75 0 01-1.5 0v-3.75zm12 0a3 3 0 013-3h.75a3 3 0 013 3V18a.75.75 0 01-1.5 0v-2.25h-3.75V18a.75.75 0 01-1.5 0v-3.75zm-6-2.25a3 3 0 013-3h.75a3 3 0 013 3V18a.75.75 0 01-1.5 0v-4.5h-3.75V18a.75.75 0 01-1.5 0v-6z"
+                                            clip-rule="evenodd" transform="scale(0.9) translate(2,2)" />
+                                    </svg>
+                                </div>
+                                Age-Based Breakdown
+                            </h3>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left border-collapse min-w-[300px]">
+                                    <thead>
+                                        <tr>
+                                            <th
+                                                class="pb-3 text-[10px] md:text-sm font-extrabold text-gray-400 uppercase tracking-widest w-1/4">
+                                                Age</th>
+                                            <th
+                                                class="pb-3 text-[10px] md:text-sm font-extrabold text-gray-400 uppercase tracking-widest w-1/4">
+                                                Sugar</th>
+                                            <th
+                                                class="pb-3 text-[10px] md:text-sm font-extrabold text-gray-400 uppercase tracking-widest w-1/4">
+                                                Sod.</th>
+                                            <th
+                                                class="pb-3 text-[10px] md:text-sm font-extrabold text-gray-400 uppercase tracking-widest w-1/4">
+                                                S. Fat</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="portionAnalysisTable"
+                                        class="text-xs md:text-base font-semibold text-gray-700"></tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Ingredients Analysis Section -->
+                        <div
+                            class="glass-panel rounded-[1.5rem] p-4 md:p-10 bg-white/90 shadow-xl shadow-emerald-50/50 border-2 border-white">
+                            <h3
+                                class="text-lg md:text-2xl font-bold text-gray-900 mb-4 md:mb-6 flex items-center gap-2 md:gap-3">
+                                <div
+                                    class="p-2 md:p-3 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl shadow-md text-white">
+                                    <!-- Custom Molecule/Ingredients Icon -->
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
+                                        class="w-6 h-6 md:w-7 md:h-7">
+                                        <path
+                                            d="M12 2.25a.75.75 0 01.75.75v2.25H15a.75.75 0 010 1.5H9a.75.75 0 010-1.5h2.25V3a.75.75 0 01.75-.75zM12 7.5a.75.75 0 01.75.75v2.536l2.126 1.227 2.126-1.227A.75.75 0 1117.754 12l-2.628 1.517v3.086l2.628 1.517a.75.75 0 11-.752 1.298l-2.628-1.517V21a.75.75 0 01-1.5 0v-2.1l-2.628 1.517a.75.75 0 11-.752-1.298l2.628-1.517v-3.086l-2.628-1.517A.75.75 0 019 10.702l2.628-1.517-.378-.219V8.25A.75.75 0 0112 7.5z" />
+                                        <circle cx="12" cy="12" r="2" opacity="0.6" />
+                                    </svg>
+                                </div>
+                                Ingredients Analysis
+                            </h3>
+                            <div id="ingredientsContainer" class="flex flex-wrap gap-2"></div>
+                        </div>
+
+                        <!-- Smart Alternative Section -->
+                        <div id="altContainer"></div>
+                    </div>
+                </div>
+
+                <!-- Barcode Scanner Modal -->
+                <div id="scannerModal"
+                    class="fixed inset-0 z-[100] hidden bg-black/95 backdrop-blur-md flex flex-col items-center justify-center p-4">
+                    <div class="bg-white rounded-[2rem] overflow-hidden w-full max-w-sm relative shadow-2xl">
+                        <div
+                            class="p-6 bg-gradient-to-r from-emerald-500 to-teal-500 flex justify-between items-center">
+                            <h3 class="text-white font-bold text-xl">Scan Barcode</h3>
+                            <button onclick="stopBarcodeScan()"
+                                class="text-white/80 hover:text-white hover:bg-white/20 p-2 rounded-full transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke-width="2.5" stroke="currentColor" class="w-6 h-6">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div id="reader" class="w-full bg-black h-[350px]"></div>
+                        <p class="text-gray-500 font-medium p-4 text-center">Point camera at a barcode</p>
+                    </div>
+                </div>
+                <div class="mt-16 text-center text-gray-400 text-sm font-medium">© HealthyScanAI by Josue Torres</div>
+            </main>
         </section>
 
-        <section id="about">
-            <h2>Cómo funciona</h2>
-            <p>Usamos <code>BarcodeDetector</code> si está disponible; de lo contrario ZXing.</p>
-            <small class="muted">Prototipo educativo; no es consejo médico.</small>
-        </section>
-    </main>
+        <!-- REST OF TABS -->
+        <section id="tab-about"
+            class="tab-content hidden max-w-6xl mx-auto glass-panel p-8 md:p-12 rounded-[3rem] bg-white/95 shadow-2xl border-2 border-white">
+            <div class="grid md:grid-cols-5 gap-12 items-start">
 
-    <footer class="footer">© HealthyScanAI</footer>
-    <script type="module" src="/main.js"></script>
+                <!-- Left Column: Photos -->
+                <div class="md:col-span-2 flex flex-col gap-6">
+                    <!-- Military Photo -->
+                    <div
+                        class="relative group rounded-3xl overflow-hidden shadow-xl border-4 border-white transform hover:scale-[1.02] transition-all duration-300">
+                        <img src="Josue3.jpg" alt="Josue Military" class="w-full h-auto object-cover">
+
+                    </div>
+
+                    <!-- Civilian Photo -->
+                    <div
+                        class="relative group rounded-3xl overflow-hidden shadow-xl border-4 border-white transform hover:scale-[1.02] transition-all duration-300">
+                        <img src="Josue.jpg" alt="Josue Civilian" class="w-full h-auto object-cover">
+
+                    </div>
+                </div>
+
+                <!-- Right Column: Text Content -->
+                <div class="md:col-span-3 space-y-6 text-left pt-4">
+                    <div>
+
+                        <h3 class="text-3xl font-bold text-gray-900">Our <span class="text-emerald-600">Mission</span>
+                        </h3>
+                    </div>
+
+                    <div class="space-y-4 text-gray-600 text-lg leading-relaxed">
+                        <p>
+                            HealthyScan AI was built with one mission in mind: <strong class="text-gray-900">Help
+                                parents easily understand nutrition labels in real-world settings.</strong> As a parent,
+                            a tech student, and a member of the U.S. Army Reserve, I understand the difficulty of
+                            pausing mid-shopping to analyze every label in detail.
+                        </p>
+                        <p>
+                            This was a passion project that began after a talk with my daughter's pediatrician, where I
+                            quickly realized most labels were made with the world's most pressing problems in mind not
+                            with parents in mind who are trying to shop quickly while also worrying about a thousand
+                            other things.
+                        </p>
+                        <p>
+                            Our tool aims to use AI to transform a difficult-to-read Nutrition Facts label into a
+                            simple, actionable summary. Instead of scrolling through and interpreting a long list of
+                            numbers, HealthyScan AI surfaces important information about the levels of three key
+                            nutrients: <strong class="text-gray-900">sugar, sodium, and saturated fat</strong>, and
+                            visualizes how they may impact key demographic groups: children, adults, and older adults.
+                        </p>
+                    </div>
+
+                    <!-- Quote Box -->
+                    <div class="bg-emerald-50 border-l-8 border-emerald-500 p-8 rounded-r-2xl shadow-sm mt-6">
+                        <p class="text-emerald-900 text-xl font-bold italic leading-relaxed">
+                            "Finally, it also provides a recommended smarter alternative within the same product
+                            category so you don't just know what is wrong with a product but have a specific
+                            recommendation for a better option for your family."
+                        </p>
+                    </div>
+                    <div class="mt-8 text-xs text-gray-400 leading-tight">
+                        HealthyScan AI is a student built prototype intended for research and demonstration purposes
+                        only. It is not a medical device nor a substitute for professional dietary consultation. It is
+                        intended to aid shoppers in making more informed and health-conscious decisions while not
+                        overwhelming them and to help busy parents make healthy choices that feel quicker and more
+                        convenient. However, all final decisions regarding health and diet should always be made in
+                        conjunction with a qualified professional.
+                    </div>
+                </div>
+            </div>
+            <div class="mt-12 text-center text-gray-400 text-sm font-medium">© HealthyScanAI by Josue Torres</div>
+        </section>
+
+        <!-- MARKETING TAB (New separated section for "Why Us?") -->
+        <section id="tab-marketing" class="tab-content hidden max-w-7xl mx-auto">
+            <h2 class="text-5xl font-extrabold text-gray-900 text-center mb-16">Why Families <span
+                    class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-500">Trust Us.</span>
+            </h2>
+            <div class="grid md:grid-cols-4 gap-6">
+                <!-- Value Prop 1: Green -->
+                <div
+                    class="bg-emerald-50 p-8 rounded-[2.5rem] shadow-sm hover:shadow-xl hover-jump transition-all duration-300 border border-emerald-100 text-left group">
+                    <div
+                        class="w-14 h-14 bg-white text-emerald-600 rounded-2xl flex items-center justify-center mb-6 shadow-sm group-hover:scale-110 transition-transform border border-emerald-100">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+                            stroke="currentColor" class="w-7 h-7">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-emerald-900 mb-3">Scan, don't guess</h3>
+                    <p class="text-emerald-800 text-sm leading-relaxed">Turn a confusing nutrition label into a simple,
+                        clear health summary in seconds.</p>
+                </div>
+
+                <!-- Value Prop 2: Blue -->
+                <div
+                    class="bg-blue-50 p-8 rounded-[2.5rem] shadow-sm hover:shadow-xl hover-jump transition-all duration-300 border border-blue-100 text-left group">
+                    <div
+                        class="w-14 h-14 bg-white text-blue-600 rounded-2xl flex items-center justify-center mb-6 shadow-sm group-hover:scale-110 transition-transform border border-blue-100">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+                            stroke="currentColor" class="w-7 h-7">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-blue-900 mb-3">Age-aware analysis</h3>
+                    <p class="text-blue-800 text-sm leading-relaxed">See instantly whether a product is suitable for
+                        children, adults, or seniors.</p>
+                </div>
+
+                <!-- Value Prop 3: Purple -->
+                <div
+                    class="bg-purple-50 p-8 rounded-[2.5rem] shadow-sm hover:shadow-xl hover-jump transition-all duration-300 border border-purple-100 text-left group">
+                    <div
+                        class="w-14 h-14 bg-white text-purple-600 rounded-2xl flex items-center justify-center mb-6 shadow-sm group-hover:scale-110 transition-transform border border-purple-100">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+                            stroke="currentColor" class="w-7 h-7">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-purple-900 mb-3">Smarter swaps</h3>
+                    <p class="text-purple-800 text-sm leading-relaxed">Get a healthier alternative within the same
+                        category, not just generic advice.</p>
+                </div>
+
+                <!-- Value Prop 4: Orange -->
+                <div
+                    class="bg-orange-50 p-8 rounded-[2.5rem] shadow-sm hover:shadow-xl hover-jump transition-all duration-300 border border-orange-100 text-left group">
+                    <div
+                        class="w-14 h-14 bg-white text-orange-600 rounded-2xl flex items-center justify-center mb-6 shadow-sm group-hover:scale-110 transition-transform border border-orange-100">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+                            stroke="currentColor" class="w-7 h-7">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-orange-900 mb-3">Built for real life</h3>
+                    <p class="text-orange-800 text-sm leading-relaxed">Focused on fast, visual feedback for parents who
+                        shop on the go.</p>
+                </div>
+            </div>
+            <div class="mt-16 text-center text-gray-400 text-sm font-medium">© HealthyScanAI by Josue Torres</div>
+        </section>
+
+        <section id="tab-prototype" class="tab-content hidden max-w-6xl mx-auto">
+            <h2 class="text-5xl font-extrabold text-gray-900 text-center mb-16">Prototype <span
+                    class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-500">Capabilities.</span>
+            </h2>
+            <div class="grid md:grid-cols-2 gap-10">
+                <div
+                    class="bg-white p-10 rounded-[2.5rem] shadow-xl hover:shadow-2xl hover-jump transition-all duration-300 border border-emerald-50 group">
+                    <div
+                        class="w-16 h-16 bg-blue-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-blue-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-white" fill="none"
+                            viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-3">Image Upload & Inference</h3>
+                    <p class="text-gray-500 leading-relaxed">Simulates scanning by analyzing uploaded label images. The
+                        system automatically infers categories (e.g., soda, cereal) from visual data.</p>
+                </div>
+                <div
+                    class="bg-white p-10 rounded-[2.5rem] shadow-xl hover:shadow-2xl hover-jump transition-all duration-300 border border-emerald-50 group">
+                    <div
+                        class="w-16 h-16 bg-emerald-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-emerald-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-white" fill="none"
+                            viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-3">Health Score Engine</h3>
+                    <p class="text-gray-500 leading-relaxed">A proprietary logic that penalizes negative nutrients
+                        (sugars, sodium) while rewarding positive ones to generate an unbiased score.</p>
+                </div>
+                <div
+                    class="bg-white p-10 rounded-[2.5rem] shadow-xl hover:shadow-2xl hover-jump transition-all duration-300 border border-emerald-50 group">
+                    <div
+                        class="w-16 h-16 bg-purple-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-purple-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-white" fill="none"
+                            viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-3">Age-Specific Analysis</h3>
+                    <p class="text-gray-500 leading-relaxed">Generates breakdown tables specifically tailored for three
+                        distinct groups: <strong>Children (4-8)</strong>, <strong>Adults (19-50)</strong>, and
+                        <strong>Seniors (51+)</strong>.
+                    </p>
+                </div>
+                <div
+                    class="bg-white p-10 rounded-[2.5rem] shadow-xl hover:shadow-2xl hover-jump transition-all duration-300 border border-emerald-50 group">
+                    <div
+                        class="w-16 h-16 bg-orange-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-orange-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-white" fill="none"
+                            viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-3">Smart Alternatives</h3>
+                    <p class="text-gray-500 leading-relaxed">Automatically identifies and suggests the healthiest
+                        product available within the same category to offer an immediate actionable swap.</p>
+                </div>
+            </div>
+            <div class="mt-8 text-center text-gray-400 text-sm font-medium">© HealthyScanAI by Josue Torres</div>
+        </section>
+
+        <!-- GUIDE TAB (New separated section) -->
+        <section id="tab-guide" class="tab-content hidden max-w-6xl mx-auto">
+            <h1 class="text-4xl md:text-6xl font-extrabold text-gray-900 mb-6 tracking-tight">
+                Eat Smarter, <span
+                    class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-500">Live
+                    Better.</span>
+                <span class="text-xs bg-gray-800 text-white px-2 py-1 rounded-full align-top">v2.0</span>
+            </h1>
+            <div class="bg-white/90 backdrop-blur-md rounded-[3rem] p-8 md:p-14 shadow-2xl glass-panel space-y-8">
+                <div
+                    class="bg-gray-50 p-8 rounded-[2rem] flex items-start gap-6 hover:bg-white border border-transparent hover:border-gray-100 hover:shadow-lg transition-all">
+                    <div
+                        class="w-12 h-12 bg-emerald-500 text-white rounded-2xl flex items-center justify-center font-bold text-xl shrink-0 shadow-lg shadow-emerald-200">
+                        1</div>
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-900 mb-2">Snap or Upload</h3>
+                        <p class="text-gray-600">Take a clear photo of the product’s Nutrition Facts label or barcode
+                            with your phone.</p>
+                    </div>
+                </div>
+                <div
+                    class="bg-gray-50 p-8 rounded-[2rem] flex items-start gap-6 hover:bg-white border border-transparent hover:border-gray-100 hover:shadow-lg transition-all">
+                    <div
+                        class="w-12 h-12 bg-emerald-500 text-white rounded-2xl flex items-center justify-center font-bold text-xl shrink-0 shadow-lg shadow-emerald-200">
+                        2</div>
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-900 mb-2">Scan</h3>
+                        <p class="text-gray-600">Click the analyze button.</p>
+                    </div>
+                </div>
+                <div
+                    class="bg-gray-50 p-8 rounded-[2rem] flex items-start gap-6 hover:bg-white border border-transparent hover:border-gray-100 hover:shadow-lg transition-all">
+                    <div
+                        class="w-12 h-12 bg-emerald-500 text-white rounded-2xl flex items-center justify-center font-bold text-xl shrink-0 shadow-lg shadow-emerald-200">
+                        3</div>
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-900 mb-2">Review Insights</h3>
+                        <p class="text-gray-600">Read the AI summary, check the table for your age group, and click the
+                            alternative to buy a healthier option.</p>
+                    </div>
+                </div>
+
+                <div class="mt-8 p-6 bg-red-50 rounded-2xl border border-red-100 flex gap-4">
+                    <div
+                        class="shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-red-500 text-white font-bold">
+                        !</div>
+                    <p class="text-red-800 text-sm font-medium leading-relaxed"><strong>Important Disclaimer:</strong>
+                        This application is a student prototype for educational and demonstration purposes only. The
+                        analysis is generated by AI and should not be considered medical or dietary advice. Always
+                        consult a qualified healthcare professional for health decisions.</p>
+                </div>
+            </div>
+            <div class="mt-16 text-center text-gray-400 text-sm font-medium">© HealthyScanAI by Josue Torres</div>
+        </section>
+
+    </div>
+
+    <!-- Main Application Logic (Modular) -->
+    <script type="module" src="js/main.js"></script>
 </body>
 
 </html>
