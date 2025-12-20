@@ -5,9 +5,12 @@
 
     const TH = {
         foods: {
-            energy_kj: [335, 670, 1005, 1340, 1675, 2010, 2345, 2680, 3015, 3350],
+            // Yuka strictness: ~2000kJ (478kcal) is roughly max penalty for energy density
+            energy_kj: [335, 670, 1000, 1340, 1600, 1800, 2000, 2300, 2600, 2900],
             sugar_g: [4.5, 9, 13.5, 18, 22.5, 27, 31, 36, 40, 45],
             satfat_g: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+            // 714mg sodium should be penalized heavily. 
+            // Current index 7 (720) -> 7 points. Maybe fine.
             sodium_mg: [90, 180, 270, 360, 450, 540, 630, 720, 810, 900],
             fiber_g: [0.9, 1.9, 2.8, 3.7, 4.7],
             protein_g: [1.6, 3.2, 4.8, 6.4, 8.0],
