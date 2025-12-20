@@ -29,9 +29,14 @@ exports.analyzeImage = async (req, res) => {
            - **SAT FAT**: Look for "Saturated Fat". Use "Per Container" or LARGEST value.
         5. List ALL ingredients found. Provide a short description (max 10 words) for EACH. Mark if harmful.
         6. Suggest REAL US market alternative product. 
+        7. Calculate a "health_score" from 0 to 100 based on overall nutritional value (100 is best).
+        8. Identify "suitability_tags" based on ingredients (e.g. "Vegan", "Gluten-Free", "Keto-Friendly", "Low Sodium", "High Protein", "Dairy-Free").
+        
         CRITICAL: Output ONLY raw JSON in English. No intro text.
         { 
           "summary": "string (use **bold** for emphasis)", 
+          "health_score": number (0-100),
+          "suitability_tags": ["string"],
           "analysis": {
               "negatives": [ { "title": "string (e.g. High Sugar)", "value": "string (e.g. 38g)", "description": "string (short explanation)" } ],
               "positives": [ { "title": "string (e.g. Protein)", "value": "string (e.g. 10g)", "description": "string" } ]
@@ -163,9 +168,14 @@ exports.analyzeBarcode = async (req, res) => {
         4. RETURN the 'extracted_nutrients' block using the REAL NUTRIENTS provided above.
         5. List ALL ingredients found.
         6. Suggest REAL US market alternative product. 
+        7. Calculate a "health_score" from 0 to 100 based on overall nutritional value (100 is best).
+        8. Identify "suitability_tags" based on ingredients (e.g. "Vegan", "Gluten-Free", "Keto-Friendly", "Low Sodium", "High Protein", "Dairy-Free").
+        
         CRITICAL: Output ONLY raw JSON in English. No intro text.
         { 
           "summary": "string (use **bold** for emphasis)", 
+          "health_score": number (0-100),
+          "suitability_tags": ["string"],
           "analysis": {
               "negatives": [ { "title": "string", "value": "string", "description": "string" } ],
               "positives": [ { "title": "string", "value": "string", "description": "string" } ]
