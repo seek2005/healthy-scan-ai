@@ -209,7 +209,7 @@ export function displayResults(data) {
                 <div class="grid md:grid-cols-2 gap-6 mb-8">
                 
                     <!-- Card 1: AI Product Analysis (Score) -->
-                    <div class="glass-panel rounded-[1.5rem] p-6 bg-white shadow-xl border border-gray-100 flex flex-col justify-between">
+                    <div class="glass-panel rounded-[1.5rem] p-6 bg-gradient-to-r from-orange-50 to-amber-50 shadow-xl border border-orange-100/50 flex flex-col justify-between">
                         <div class="flex items-center gap-2 mb-4">
                              <div class="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
@@ -228,12 +228,12 @@ export function displayResults(data) {
                                 </div>
                             </div>
                             
-                            <div>
+                            <div class="flex-1 min-w-0"> <!-- allow shrinking -->
                                 <h4 class="text-2xl font-bold text-gray-900 mb-1">Overall: <span class="text-sm px-2 py-1 rounded-full ${scoreBg} ${scoreLabel === 'Excellent' ? 'text-emerald-700' : (scoreLabel === 'Fair' ? 'text-orange-700' : 'text-red-700')}">${scoreLabel}</span></h4>
                                 <p class="text-sm text-gray-500 leading-tight mb-2">
                                     Breakdown by Nutrition, Additives and Processing.
                                 </p>
-                                <div class="flex gap-2 text-[10px] font-bold text-gray-400">
+                                <div class="flex flex-wrap gap-x-3 gap-y-1 text-[10px] font-bold text-gray-400">
                                     <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> Nutrition</span>
                                     <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-orange-400"></span> Additives</span>
                                     <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-red-400"></span> Processing</span>
@@ -243,7 +243,7 @@ export function displayResults(data) {
                     </div>
 
                     <!-- Card 2: Is it for me? (Suitability) -->
-                    <div class="glass-panel rounded-[1.5rem] p-6 bg-white shadow-xl border border-gray-100">
+                    <div class="glass-panel rounded-[1.5rem] p-6 bg-gradient-to-r from-orange-50 to-amber-50 shadow-xl border border-orange-100/50">
                         <div class="flex items-center gap-2 mb-4">
                              <div class="p-2 bg-blue-50 text-blue-600 rounded-lg">
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
