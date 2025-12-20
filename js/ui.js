@@ -173,15 +173,23 @@ export function displayResults(data) {
                     sugars_g: data.extracted_nutrients?.sugar_g || 0,
                     saturated_fat_g: data.extracted_nutrients?.sat_fat_g || 0,
                     sodium_mg: data.extracted_nutrients?.sodium_mg || 0,
-                    energy_kcal: 0, // Fallback as we might not have it
-                    fiber_g: 0,
-                    protein_g: 0
+                    energy_kcal: data.extracted_nutrients?.energy_kcal || 0,
+                    fiber_g: data.extracted_nutrients?.fiber_g || 0,
+                    protein_g: data.extracted_nutrients?.protein_g || 0
                 },
                 additives: (data.ingredients_list || [])
                     .filter(i => i.is_harmful)
-                    .map(i => ({ risk: "high" })), // Map harmful to high risk for strictness
+                    .map(i => ({ risk: "high" })),
                 organic: (data.suitability_tags || []).includes("Organic")
             };
+
+            // STRICT PENALTY: If "Ultra-Processed", inject artificial penalties to force score down
+            const isProcessed = (data.suitability_tags || []).some(t => t.includes('Processed'));
+            if (isProcessed) {
+                // Add 2 virtual high-risk additives to tank the score (approx -60 points if start from 100)
+                yukaProduct.additives.push({ risk: "high" });
+                yukaProduct.additives.push({ risk: "high" });
+            }
 
             // Calculate Score
             const y = window.YukaScore.compute(yukaProduct);

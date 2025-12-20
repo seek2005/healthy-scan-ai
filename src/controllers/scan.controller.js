@@ -150,9 +150,10 @@ exports.analyzeBarcode = async (req, res) => {
         };
 
         // 2. EXTRACT NUTRIENTS DIRECTLY (Hard Data > AI Guess)
+        // Prioritize 100g to ensure "Bad" foods are caught regardless of small serving sizes
         const getNutrient = (key) => {
             const n = product.nutriments;
-            return n[`${key}_serving`] || n[`${key}_100g`] || n[key] || 0;
+            return n[`${key}_100g`] || n[`${key}_serving`] || n[key] || 0;
         };
 
         const sodiumVal = (product.nutriments.sodium_value || product.nutriments.sodium || 0);
@@ -162,10 +163,18 @@ exports.analyzeBarcode = async (req, res) => {
         if (sodiumUnit === 'g') finalSodiumMg = sodiumVal * 1000;
         if (sodiumUnit === 'mg') finalSodiumMg = sodiumVal;
 
+        // If sodium is 0, try to find sodium_100g directly
+        if (!finalSodiumMg && product.nutriments.sodium_100g) {
+            finalSodiumMg = product.nutriments.sodium_100g * 1000;
+        }
+
         const realNutrients = {
+            energy_kcal: Number(getNutrient('energy-kcal') || 0),
             sugar_g: Number(getNutrient('sugars') || 0),
             sodium_mg: Number(finalSodiumMg || 0),
-            sat_fat_g: Number(getNutrient('saturated-fat') || 0)
+            sat_fat_g: Number(getNutrient('saturated-fat') || 0),
+            fiber_g: Number(getNutrient('fiber') || 0),
+            protein_g: Number(getNutrient('proteins') || 0)
         };
 
         // 3. Send data to Gemini for Qualitative Analysis
@@ -217,7 +226,7 @@ exports.analyzeBarcode = async (req, res) => {
               "negatives": [ { "title": "string", "value": "string", "description": "string" } ],
               "positives": [ { "title": "string", "value": "string", "description": "string" } ]
           },
-          "extracted_nutrients": { "sugar_g": ${realNutrients.sugar_g}, "sodium_mg": ${realNutrients.sodium_mg}, "sat_fat_g": ${realNutrients.sat_fat_g} },
+          "extracted_nutrients": { "energy_kcal": ${realNutrients.energy_kcal}, "sugar_g": ${realNutrients.sugar_g}, "sodium_mg": ${realNutrients.sodium_mg}, "sat_fat_g": ${realNutrients.sat_fat_g}, "fiber_g": ${realNutrients.fiber_g}, "protein_g": ${realNutrients.protein_g} },
           "allergens": [ { "name": "string", "severity": "string", "description": "string" } ],
           "ingredients_list": [{"name": "string", "is_harmful": boolean, "description": "string"}],
           "alternative": { "name": "string", "brand": "string", "score": "string", "reason": "string", "search_term": "string" } 
