@@ -229,6 +229,38 @@ export function displayResults(data) {
                 yukaProduct.additives.push({ risk: "high" });
             }
 
+            // 3. POLYFILL: Parse ingredients_text if list is missing (Fast Path)
+            if ((!data.ingredients_list || data.ingredients_list.length === 0) && data.ingredients_text) {
+                // Simple split by comma, respecting parentheses roughly
+                data.ingredients_list = data.ingredients_text
+                    .split(/,(?![^()]*\))/) // Split by comma NOT inside parentheses
+                    .map(s => s.trim())
+                    .filter(s => s.length > 1)
+                    .slice(0, 20) // Limit to 20 tags
+                    .map(name => {
+                        const isBad = UPF_KEYWORDS.some(r => r.test(name));
+                        return {
+                            name: name,
+                            is_harmful: isBad,
+                            description: isBad ? "Associated with ultra-processed foods." : "Common ingredient."
+                        };
+                    });
+            }
+
+            // 4. POLYFILL: Fallback Alternative if missing and score is low
+            // We'll compute a temp score here just to check if we need an alternative
+            const tempScore = window.YukaScore.compute(yukaProduct).overall;
+
+            if (!data.alternative && tempScore < 50) {
+                const cat = data.category ? data.category.split(',')[0] : "Snack";
+                data.alternative = {
+                    name: `Healthier ${cat} Options`,
+                    brand: "Top Rated",
+                    reason: "This product received a low health score. Consider trying a highly-rated, cleaner alternative.",
+                    score: "Better"
+                };
+            }
+
             // Calculate Score based on Nutrients + Additives + Organic
             const y = window.YukaScore.compute(yukaProduct);
             let score = y.overall;
