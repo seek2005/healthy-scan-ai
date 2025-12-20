@@ -213,8 +213,13 @@ export function displayResults(data) {
                 };
             }
 
-            // 2. STRICT PENALTY: Ultra-Processed (NOVA 4 or Tag)
-            const isProcessed = (data.nova_group === 4) || (data.suitability_tags || []).some(t => t.includes('Processed') || t.includes('Ultra'));
+            // 2. STRICT PENALTY: Ultra-Processed (NOVA 4 or Tag or Keywords)
+            const UPF_KEYWORDS = [/maltodextrin/i, /corn syrup/i, /high fructose/i, /dextrose/i, /hydrogenated/i, /artificial/i, /color/i, /lake/i, /glutamate/i, /disodium/i, /benzoate/i, /yellow 5/i, /yellow 6/i, /red 40/i, /blue 1/i];
+            const hasUPFIngredients = (data.ingredients_text || "").match(new RegExp(UPF_KEYWORDS.map(r => r.source).join('|'), 'i'));
+
+            const isProcessed = (data.nova_group === 4) ||
+                (data.suitability_tags || []).some(t => t.includes('Processed') || t.includes('Ultra')) ||
+                !!hasUPFIngredients;
 
             if (isProcessed) {
                 // Add 4 virtual high-risk additives to force score to 0/30 for additives

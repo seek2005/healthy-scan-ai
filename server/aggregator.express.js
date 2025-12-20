@@ -18,7 +18,9 @@ function normalizeFromOFF(code, raw) {
     const p = raw?.product;
     if (!p) return null;
     const n = p.nutriments || {};
-    const sodium_mg = n.sodium_100g ?? (n.salt_100g != null ? n.salt_100g * 400 : null);
+    // OFF returns sodium_100g in GRAMS. Convert to MG. Fallback to salt*400.
+    const sodium_mg = n.sodium_100g != null ? n.sodium_100g * 1000
+        : (n.salt_100g != null ? n.salt_100g * 400 : null);
     return {
         name: p.product_name || p.brands || code,
         category: p.categories || '',
