@@ -81,17 +81,24 @@ function stopBarcodeScan() {
 async function onScanSuccess(decodedText) {
     stopBarcodeScan();
     resetUI(imageUpload);
-    showStatus(`Found Barcode: ${decodedText}. Fetching data...`);
+    showStatus(`Fetching data for ${decodedText}...`);
 
     try {
-        const userProfile = getCurrentProfile();
-        const data = await analyzeBarcode(decodedText, userProfile);
-        displayResults(data);
-        saveToHistory(data);
+        const t0 = performance.now();
+        // Fast Path
+        const result = await window.fastFetchProduct(decodedText);
+        const { product } = result;
+        console.log(`[FastBarcode] Resolved in ${Math.round(performance.now() - t0)}ms`, result);
+
+        displayResults(product);
+
+        // Optional: Trigger AI analysis in background if needed, but for now fast path is the priority.
+        saveToHistory(product);
+
         document.getElementById('statusMessage').classList.add('hidden');
     } catch (err) {
         console.error(err);
-        showStatus(err.message, true);
+        showStatus('Product not found or network error.', true);
     }
 }
 

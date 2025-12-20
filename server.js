@@ -46,6 +46,7 @@ app.use(limiter);
 app.use(express.static('.')); // Serve static files from current directory
 
 // Mount specific API routes
+app.use(require('./server/aggregator.express.js')); // Fast Barcode Aggregator
 app.use('/api', apiRoutes);
 app.use('/.netlify/functions/api', apiRoutes); // For Netlify Functions path
 app.use('/', apiRoutes); // Fallback
