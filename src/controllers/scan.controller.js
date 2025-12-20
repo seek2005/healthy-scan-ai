@@ -23,14 +23,21 @@ exports.analyzeImage = async (req, res) => {
         
         SCORING RULES (CRITICAL - FOLLOW STRICTLY):
         - **Base Score**: Start at 100.
-        - **Ultra-Processed Penalty**: If ingredients list is long with unpronounceable chemicals (NOVA Group 4), DEDUCT 30-50 points.
-        - **Additives Penalty**: For EACH harmful additive (e.g., Red 40, Yellow 5, HFCS, Nitrates, BHT), DEDUCT 15 points.
-        - **Nutrient Penalty**: Deduct for High Sugar (>10g), High Sodium (>400mg), or High Sat Fat (>4g).
-        - **Organic Bonus**: If "Organic", ADD 10 points (unless high sugar/junk).
-        - **Whole Food Bonus**: If ingredients are simple/natural (NOVA 1), maintain high score.
+        - **Ultra-Processed Penalty**: If ingredients list contains HIGH QUANTITY of chemical additives (NOVA 4), DEDUCT 30-50 points.
+        - **Additives Penalty**: For EACH harmful additive (Red 40, Nitrates, etc), DEDUCT 15 points.
+        - **Sugar Context**: Do NOT penalize natural sugars found in Milk (Lactose) or Fruit significantly. Only penalize ADDED sugars (>10g).
+        - **Nutrient Penalties**:
+            - Sodium > 500mg: -15 points.
+            - Saturated Fat > 5g: -10 points.
+            - Sugar > 15g (and IS ADDED): -15 points.
+        - **Bonuses (Stackable)**:
+            - **Organic**: +15 points.
+            - **High Protein (>8g)**: +10 points.
+            - **Fiber (>3g)**: +5 points.
+            - **No Additives**: +10 points.
 
-        *Example 1 (Cheetos/Doritos)*: Ultra-processed + Red 40 + Yellow 5 + High Sodium = Score SHOULD be 0-20 (Poor).
-        *Example 2 (Organic Milk)*: Natural source of Fat/Protein + Organic + No Additives = Score SHOULD be 80-100 (Excellent).
+        *Example 1 (Cheetos)*: Base 100 - 40 (Ultra Processed) - 15 (Yellow 6) - 10 (Sodium) = ~35 (Poor).
+        *Example 2 (Organic Milk)*: Base 100 - 0 (Natural Sugar) + 15 (Organic) + 10 (Protein) = ~100 (Excellent). (Max 100).
 
         1. Identify product. 
         2. Summarize health value. 
@@ -176,15 +183,22 @@ exports.analyzeBarcode = async (req, res) => {
         
         SCORING RULES (CRITICAL - FOLLOW STRICTLY):
         - **Base Score**: Start at 100.
-        - **Ultra-Processed Penalty**: If ingredients list is long with unpronounceable chemicals (NOVA Group 4), DEDUCT 30-50 points.
-        - **Additives Penalty**: For EACH harmful additive (e.g., Red 40, Yellow 5, HFCS, Nitrates, BHT), DEDUCT 15 points.
-        - **Nutrient Penalty**: Deduct for High Sugar (>10g), High Sodium (>400mg), or High Sat Fat (>4g).
-        - **Organic Bonus**: If "Organic", ADD 10 points (unless high sugar/junk).
-        - **Whole Food Bonus**: If ingredients are simple/natural (NOVA 1), maintain high score.
-        
-        *Example 1 (Cheetos/Doritos)*: Ultra-processed + Red 40 + Yellow 5 + High Sodium = Score SHOULD be 0-20 (Poor).
-        *Example 2 (Organic Milk)*: Natural source of Fat/Protein + Organic + No Additives = Score SHOULD be 80-100 (Excellent).
-        
+        - **Ultra-Processed Penalty**: If ingredients list contains HIGH QUANTITY of chemical additives (NOVA 4), DEDUCT 30-50 points.
+        - **Additives Penalty**: For EACH harmful additive (Red 40, Nitrates, etc), DEDUCT 15 points.
+        - **Sugar Context**: Do NOT penalize natural sugars found in Milk (Lactose) or Fruit significantly. Only penalize ADDED sugars (>10g).
+        - **Nutrient Penalties**:
+            - Sodium > 500mg: -15 points.
+            - Saturated Fat > 5g: -10 points.
+            - Sugar > 15g (and IS ADDED): -15 points.
+        - **Bonuses (Stackable)**:
+            - **Organic**: +15 points.
+            - **High Protein (>8g)**: +10 points.
+            - **Fiber (>3g)**: +5 points.
+            - **No Additives**: +10 points.
+
+        *Example 1 (Cheetos)*: Base 100 - 40 (Ultra Processed) - 15 (Yellow 6) - 10 (Sodium) = ~35 (Poor).
+        *Example 2 (Organic Milk)*: Base 100 - 0 (Natural Sugar) + 15 (Organic) + 10 (Protein) = ~100 (Excellent). (Max 100).
+
         1. Identify product. 
         2. Summarize health value. 
         3. Analyze "Positives" vs "Negatives".
