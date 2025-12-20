@@ -20,6 +20,18 @@ exports.analyzeImage = async (req, res) => {
         ` : "";
 
         const prompt = `You are a nutritionist AI. Analyze this nutrition label. ${profileContext}
+        
+        SCORING RULES (CRITICAL - FOLLOW STRICTLY):
+        - **Base Score**: Start at 100.
+        - **Ultra-Processed Penalty**: If ingredients list is long with unpronounceable chemicals (NOVA Group 4), DEDUCT 30-50 points.
+        - **Additives Penalty**: For EACH harmful additive (e.g., Red 40, Yellow 5, HFCS, Nitrates, BHT), DEDUCT 15 points.
+        - **Nutrient Penalty**: Deduct for High Sugar (>10g), High Sodium (>400mg), or High Sat Fat (>4g).
+        - **Organic Bonus**: If "Organic", ADD 10 points (unless high sugar/junk).
+        - **Whole Food Bonus**: If ingredients are simple/natural (NOVA 1), maintain high score.
+
+        *Example 1 (Cheetos/Doritos)*: Ultra-processed + Red 40 + Yellow 5 + High Sodium = Score SHOULD be 0-20 (Poor).
+        *Example 2 (Organic Milk)*: Natural source of Fat/Protein + Organic + No Additives = Score SHOULD be 80-100 (Excellent).
+
         1. Identify product. 
         2. Summarize health value. 
         3. Analyze the product for "Positives" (Health benefits, good nutrients) and "Negatives" (High sugar, additives, processing).
@@ -29,8 +41,8 @@ exports.analyzeImage = async (req, res) => {
            - **SAT FAT**: Look for "Saturated Fat". Use "Per Container" or LARGEST value.
         5. List ALL ingredients found. Provide a short description (max 10 words) for EACH. Mark if harmful.
         6. Suggest REAL US market alternative product. 
-        7. Calculate a "health_score" from 0 to 100 based on overall nutritional value (100 is best).
-        8. Identify "suitability_tags" based on ingredients (e.g. "Vegan", "Gluten-Free", "Keto-Friendly", "Low Sodium", "High Protein", "Dairy-Free").
+        7. Calculate a "health_score" from 0 to 100 based on the RULES above.
+        8. Identify "suitability_tags" based on ingredients (e.g. "Vegan", "Gluten-Free", "Keto-Friendly", "Low Sodium", "High Protein", "Dairy-Free", "Organic", "Ultra-Processed").
         
         CRITICAL: Output ONLY raw JSON in English. No intro text.
         { 
@@ -162,14 +174,25 @@ exports.analyzeBarcode = async (req, res) => {
         Product: ${JSON.stringify(productContext)}
         REAL NUTRIENTS (Use these EXACTLY): ${JSON.stringify(realNutrients)}
         
+        SCORING RULES (CRITICAL - FOLLOW STRICTLY):
+        - **Base Score**: Start at 100.
+        - **Ultra-Processed Penalty**: If ingredients list is long with unpronounceable chemicals (NOVA Group 4), DEDUCT 30-50 points.
+        - **Additives Penalty**: For EACH harmful additive (e.g., Red 40, Yellow 5, HFCS, Nitrates, BHT), DEDUCT 15 points.
+        - **Nutrient Penalty**: Deduct for High Sugar (>10g), High Sodium (>400mg), or High Sat Fat (>4g).
+        - **Organic Bonus**: If "Organic", ADD 10 points (unless high sugar/junk).
+        - **Whole Food Bonus**: If ingredients are simple/natural (NOVA 1), maintain high score.
+        
+        *Example 1 (Cheetos/Doritos)*: Ultra-processed + Red 40 + Yellow 5 + High Sodium = Score SHOULD be 0-20 (Poor).
+        *Example 2 (Organic Milk)*: Natural source of Fat/Protein + Organic + No Additives = Score SHOULD be 80-100 (Excellent).
+        
         1. Identify product. 
         2. Summarize health value. 
         3. Analyze "Positives" vs "Negatives".
         4. RETURN the 'extracted_nutrients' block using the REAL NUTRIENTS provided above.
         5. List ALL ingredients found.
         6. Suggest REAL US market alternative product. 
-        7. Calculate a "health_score" from 0 to 100 based on overall nutritional value (100 is best).
-        8. Identify "suitability_tags" based on ingredients (e.g. "Vegan", "Gluten-Free", "Keto-Friendly", "Low Sodium", "High Protein", "Dairy-Free").
+        7. Calculate a "health_score" from 0 to 100 based on the RULES above.
+        8. Identify "suitability_tags" based on ingredients (e.g. "Vegan", "Gluten-Free", "Keto-Friendly", "Low Sodium", "High Protein", "Dairy-Free", "Organic", "Ultra-Processed").
         
         CRITICAL: Output ONLY raw JSON in English. No intro text.
         { 
