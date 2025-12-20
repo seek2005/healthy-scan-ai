@@ -184,17 +184,33 @@ export function displayResults(data) {
             };
 
             // STRICT PENALTY: If "Ultra-Processed", inject artificial penalties to force score down
-            const isProcessed = (data.suitability_tags || []).some(t => t.includes('Processed'));
+            // Yuka gives Cheetos ~3/100. We need to mirror this harshness.
+            const isProcessed = (data.suitability_tags || []).some(t => t.includes('Processed') || t.includes('Ultra'));
+
             if (isProcessed) {
-                // Add 2 virtual high-risk additives to tank the score (approx -60 points if start from 100)
+                // Add 4 virtual high-risk additives. 
+                // Each 'high' risk additive prevents the additive score from being good, and 4 of them = ~0/100 additives score.
+                yukaProduct.additives.push({ risk: "high" });
+                yukaProduct.additives.push({ risk: "high" });
                 yukaProduct.additives.push({ risk: "high" });
                 yukaProduct.additives.push({ risk: "high" });
             }
 
             // Calculate Score
             const y = window.YukaScore.compute(yukaProduct);
-            const score = y.overall;
-            const scoreLabel = y.label; // Excellent, Good, Mediocre, Bad
+            let score = y.overall;
+
+            // MANUAL OVERRIDES for obvious junk food thresholds (Per 100g)
+            // If Sodium > 800mg (extremely salty), Force score cap at 40 (Bad)
+            if (yukaProduct.nutrients.sodium_mg > 800) {
+                score = Math.min(score, 35);
+            }
+            // If Sat Fat > 10g, Force score cap
+            if (yukaProduct.nutrients.saturated_fat_g > 10) {
+                score = Math.min(score, 35);
+            }
+
+            const scoreLabel = score >= 75 ? 'Excellent' : score >= 50 ? 'Good' : score >= 25 ? 'Mediocre' : 'Bad';
 
             // Map Label to Colors (Yuka style)
             let scoreColor = '#10b981'; // Excellent (Green)
