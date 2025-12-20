@@ -189,8 +189,32 @@ export function displayResults(data) {
                 organic: data.organic !== undefined ? data.organic : (data.suitability_tags || []).includes("Organic")
             };
 
-            // STRICT PENALTY: Ultra-Processed
-            const isProcessed = (data.suitability_tags || []).some(t => t.includes('Processed') || t.includes('Ultra'));
+            // 1. Recover "Age-Based Breakdown" if missing (Fast Path)
+            if (!data.portion_analysis && yukaProduct.nutrients) {
+                const s = yukaProduct.nutrients.sugars_g || 0;
+                const sod = yukaProduct.nutrients.sodium_mg || 0;
+                const f = yukaProduct.nutrients.saturated_fat_g || 0;
+
+                const getRec = (val, limit) => {
+                    const pct = (val / limit) * 100;
+                    return pct > 40 ? "High" : pct > 20 ? "Medium" : "Low";
+                };
+
+                data.portion_analysis = {
+                    "Children (4-8)": {
+                        sugar: getRec(s, 25), sodium: getRec(sod, 1200), saturated_fat: getRec(f, 10)
+                    },
+                    "Adults (19-50)": {
+                        sugar: getRec(s, 50), sodium: getRec(sod, 2300), saturated_fat: getRec(f, 20)
+                    },
+                    "Seniors (51+)": {
+                        sugar: getRec(s, 30), sodium: getRec(sod, 1500), saturated_fat: getRec(f, 15)
+                    }
+                };
+            }
+
+            // 2. STRICT PENALTY: Ultra-Processed (NOVA 4 or Tag)
+            const isProcessed = (data.nova_group === 4) || (data.suitability_tags || []).some(t => t.includes('Processed') || t.includes('Ultra'));
 
             if (isProcessed) {
                 // Add 4 virtual high-risk additives to force score to 0/30 for additives

@@ -34,6 +34,8 @@ function normalizeFromOFF(code, raw) {
             protein_g: n.proteins_100g ?? null
         },
         additives: (p.additives_tags || []).map(tag => ({ risk: 'unknown', tag })),
+        nova_group: p.nova_group, // 1-4
+        ingredients_text: p.ingredients_text || '',
         organic: /organic|bio/i.test(p.labels || '')
     };
 }
