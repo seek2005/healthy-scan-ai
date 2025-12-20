@@ -163,18 +163,52 @@ export function displayResults(data) {
     if (summaryContainer) {
         summaryContainer.classList.remove('hidden');
         if (data.summary) {
-            // Default values if API returns null (backward compatibility)
-            const score = data.health_score || 0;
-            const tags = data.suitability_tags || ["General Use"];
+            // Prepare data for Yuka Scorer
+            const yukaProduct = {
+                name: "Product", // Placeholder
+                category: "foods", // Default to foods
+                nutrients_basis: "per100g",
+                serving_size_gml: 100, // Assume normalized or provide logic if avail
+                nutrients: {
+                    sugars_g: data.extracted_nutrients?.sugar_g || 0,
+                    saturated_fat_g: data.extracted_nutrients?.sat_fat_g || 0,
+                    sodium_mg: data.extracted_nutrients?.sodium_mg || 0,
+                    energy_kcal: 0, // Fallback as we might not have it
+                    fiber_g: 0,
+                    protein_g: 0
+                },
+                additives: (data.ingredients_list || [])
+                    .filter(i => i.is_harmful)
+                    .map(i => ({ risk: "high" })), // Map harmful to high risk for strictness
+                organic: (data.suitability_tags || []).includes("Organic")
+            };
 
-            // Score Color Logic
-            let scoreColor = '#10b981'; // Green
-            let scoreLabel = 'Excellent';
+            // Calculate Score
+            const y = window.YukaScore.compute(yukaProduct);
+            const score = y.overall;
+            const scoreLabel = y.label; // Excellent, Good, Mediocre, Bad
+
+            // Map Label to Colors (Yuka style)
+            let scoreColor = '#10b981'; // Excellent (Green)
             let scoreBg = 'bg-emerald-50';
-            if (score < 80) { scoreColor = '#f59e0b'; scoreLabel = 'Fair'; scoreBg = 'bg-orange-50'; }
-            if (score < 40) { scoreColor = '#ef4444'; scoreLabel = 'Poor'; scoreBg = 'bg-red-50'; }
+            let labelColorClass = 'text-emerald-700';
+
+            if (scoreLabel === 'Good') {
+                scoreColor = '#84cc16'; // Light Green
+                scoreBg = 'bg-lime-50';
+                labelColorClass = 'text-lime-700';
+            } else if (scoreLabel === 'Mediocre') {
+                scoreColor = '#f59e0b'; // Orange
+                scoreBg = 'bg-orange-50';
+                labelColorClass = 'text-orange-700';
+            } else if (scoreLabel === 'Bad') {
+                scoreColor = '#ef4444'; // Red
+                scoreBg = 'bg-red-50';
+                labelColorClass = 'text-red-700';
+            }
 
             // Suitability Tags Logic
+            const tags = data.suitability_tags || ["General Use"];
             const tagsHtml = tags.map(tag => {
                 // Determine color based on keyword or severity (Mock logic for now as API just returns strings)
                 // In future, API should return {tag, sentiment}
@@ -229,7 +263,7 @@ export function displayResults(data) {
                             </div>
                             
                             <div class="flex-1 min-w-0"> <!-- allow shrinking -->
-                                <h4 class="text-2xl font-bold text-gray-900 mb-1">Overall: <span class="text-sm px-2 py-1 rounded-full ${scoreBg} ${scoreLabel === 'Excellent' ? 'text-emerald-700' : (scoreLabel === 'Fair' ? 'text-orange-700' : 'text-red-700')}">${scoreLabel}</span></h4>
+                                <h4 class="text-2xl font-bold text-gray-900 mb-1">Overall: <span class="text-sm px-2 py-1 rounded-full ${scoreBg} ${labelColorClass}">${scoreLabel}</span></h4>
                                 <p class="text-sm text-gray-500 leading-tight mb-2">
                                     Breakdown by Nutrition, Additives and Processing.
                                 </p>
