@@ -319,23 +319,22 @@ export function displayResults(data) {
             `;
         }
     }
-}
 
-// 1. Allergen Alerts
-const allergenContainer = document.getElementById('allergenContainer');
-if (allergenContainer) {
-    allergenContainer.innerHTML = '';
-    allergenContainer.classList.add('hidden');
-    if (data.allergens && data.allergens.length > 0) {
-        allergenContainer.classList.remove('hidden');
-        let allergensHtml = data.allergens.map(a => `
+    // 1. Allergen Alerts
+    const allergenContainer = document.getElementById('allergenContainer');
+    if (allergenContainer) {
+        allergenContainer.innerHTML = '';
+        allergenContainer.classList.add('hidden');
+        if (data.allergens && data.allergens.length > 0) {
+            allergenContainer.classList.remove('hidden');
+            let allergensHtml = data.allergens.map(a => `
                 <div class="bg-red-50 p-4 rounded-xl border border-red-100">
                    <p class="font-bold text-red-900">${a.name}</p>
                    <p class="text-sm text-red-700">${a.description}</p>
                 </div>
             `).join('');
 
-        allergenContainer.innerHTML = `
+            allergenContainer.innerHTML = `
                 <div class="bg-red-50/50 rounded-[1.5rem] p-1 border-2 border-red-100">
                     <div class="bg-red-100/50 p-4 rounded-t-[1.3rem] flex items-center gap-2">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6 text-red-600">
@@ -351,32 +350,32 @@ if (allergenContainer) {
                     </div>
                 </div>
             `;
-    }
-}
-
-// 2. Table (Age Breakdown)
-const tableElement = document.getElementById('portionAnalysisTable');
-if (tableElement) {
-    const parentCard = tableElement.closest('.glass-panel'); // Re-introduced definition
-    if (parentCard) {
-        parentCard.className = 'glass-panel rounded-[1.5rem] p-4 md:p-10 bg-gradient-to-r from-orange-50 to-amber-50 shadow-xl border border-orange-100/50';
-        const headerIcon = parentCard.querySelector('.p-2');
-        if (headerIcon) headerIcon.className = 'p-2 md:p-3 bg-white text-orange-500 rounded-xl shadow-sm';
+        }
     }
 
+    // 2. Table (Age Breakdown)
+    const tableElement = document.getElementById('portionAnalysisTable');
+    if (tableElement) {
+        const parentCard = tableElement.closest('.glass-panel'); // Re-introduced definition
+        if (parentCard) {
+            parentCard.className = 'glass-panel rounded-[1.5rem] p-4 md:p-10 bg-gradient-to-r from-orange-50 to-amber-50 shadow-xl border border-orange-100/50';
+            const headerIcon = parentCard.querySelector('.p-2');
+            if (headerIcon) headerIcon.className = 'p-2 md:p-3 bg-white text-orange-500 rounded-xl shadow-sm';
+        }
 
-    const SHORT_STATUS = {
-        "Recommended": "Rec.",
-        "Low": "Low",
-        "Medium": "Med.",
-        "High": "High",
-        "Excessive": "Bad"
-    };
 
-    let rows = '';
-    if (data.portion_analysis) {
-        for (const [group, nutrients] of Object.entries(data.portion_analysis)) {
-            rows += `
+        const SHORT_STATUS = {
+            "Recommended": "Rec.",
+            "Low": "Low",
+            "Medium": "Med.",
+            "High": "High",
+            "Excessive": "Bad"
+        };
+
+        let rows = '';
+        if (data.portion_analysis) {
+            for (const [group, nutrients] of Object.entries(data.portion_analysis)) {
+                rows += `
     <tr class="group hover:bg-white/50 transition-colors border-b border-orange-100 last:border-0">
                     <td class="py-2 md:py-4 font-bold text-gray-800 capitalize pl-1 text-xs md:text-base w-1/4 break-words">${group.replace('Children', 'Child').replace('Adults', 'Adult').replace('Seniors', 'Senior')}</td>
                     <td class="py-2 md:py-4 text-center w-1/4">
@@ -395,45 +394,45 @@ if (tableElement) {
                         </span>
                     </td>
                 </tr>`;
+            }
         }
-    }
-    tableElement.innerHTML = rows;
-}
-
-// 3. Ingredients
-const ingContainer = document.getElementById('ingredientsContainer');
-if (ingContainer) {
-    ingContainer.innerHTML = '';
-    const parentCard = ingContainer.closest('.glass-panel'); // Re-introduced definition
-    if (parentCard) {
-        parentCard.className = 'glass-panel rounded-[1.5rem] p-4 md:p-10 bg-gradient-to-r from-orange-50 to-amber-50 shadow-xl border border-orange-100/50';
-        const headerIcon = parentCard.querySelector('.p-2');
-        if (headerIcon) headerIcon.className = 'p-2 md:p-3 bg-white text-orange-600 rounded-xl shadow-sm';
+        tableElement.innerHTML = rows;
     }
 
-    if (data.ingredients_list) {
-        data.ingredients_list.forEach(ing => {
-            const el = document.createElement('div');
-            el.className = `group relative px-3 py-1 md:px-4 md:py-2 rounded-full text-[10px] md:text-xs font-bold flex items-center gap-1 cursor-help transition-all hover:scale-105 shadow-sm hover:shadow-md ${ing.is_harmful ? 'bg-red-100 text-red-700 border border-red-200' : 'bg-white text-emerald-700 border border-emerald-100'}`;
-            el.innerHTML = `
+    // 3. Ingredients
+    const ingContainer = document.getElementById('ingredientsContainer');
+    if (ingContainer) {
+        ingContainer.innerHTML = '';
+        const parentCard = ingContainer.closest('.glass-panel'); // Re-introduced definition
+        if (parentCard) {
+            parentCard.className = 'glass-panel rounded-[1.5rem] p-4 md:p-10 bg-gradient-to-r from-orange-50 to-amber-50 shadow-xl border border-orange-100/50';
+            const headerIcon = parentCard.querySelector('.p-2');
+            if (headerIcon) headerIcon.className = 'p-2 md:p-3 bg-white text-orange-600 rounded-xl shadow-sm';
+        }
+
+        if (data.ingredients_list) {
+            data.ingredients_list.forEach(ing => {
+                const el = document.createElement('div');
+                el.className = `group relative px-3 py-1 md:px-4 md:py-2 rounded-full text-[10px] md:text-xs font-bold flex items-center gap-1 cursor-help transition-all hover:scale-105 shadow-sm hover:shadow-md ${ing.is_harmful ? 'bg-red-100 text-red-700 border border-red-200' : 'bg-white text-emerald-700 border border-emerald-100'}`;
+                el.innerHTML = `
                     ${ing.name}
 <div class="tooltip-bubble">
     ${ing.description || "No description available"}
 </div>
 `;
-            ingContainer.appendChild(el);
-        });
+                ingContainer.appendChild(el);
+            });
+        }
     }
-}
 
-// 4. Smart Alt
-const altContainer = document.getElementById('altContainer');
-if (altContainer && data.alternative) {
-    const amazonUrl = `https://www.amazon.com/s?k=${encodeURIComponent(data.alternative.brand + ' ' + data.alternative.name)}`;
-    const cleanName = encodeURIComponent(data.alternative.name + " " + data.alternative.brand + " product packaging");
-    const productImageUrl = `https://image.pollinations.ai/prompt/${cleanName}?width=300&height=300&nologo=true`;
+    // 4. Smart Alt
+    const altContainer = document.getElementById('altContainer');
+    if (altContainer && data.alternative) {
+        const amazonUrl = `https://www.amazon.com/s?k=${encodeURIComponent(data.alternative.brand + ' ' + data.alternative.name)}`;
+        const cleanName = encodeURIComponent(data.alternative.name + " " + data.alternative.brand + " product packaging");
+        const productImageUrl = `https://image.pollinations.ai/prompt/${cleanName}?width=300&height=300&nologo=true`;
 
-    altContainer.innerHTML = `
+        altContainer.innerHTML = `
             <div class="glass-panel p-5 md:p-10 bg-gradient-to-r from-orange-50 to-amber-50 rounded-[2rem] md:rounded-[2.5rem] border border-orange-100 shadow-xl mt-6 md:mt-8">
                 <div class="flex items-center gap-4 mb-8">
                      <div class="p-2 bg-white text-orange-600 rounded-xl shadow-sm">
@@ -464,9 +463,9 @@ if (altContainer && data.alternative) {
                 </div>
             </div>
         `;
-}
-
-if (resultsContainer) {
-    resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
     }
+
+    if (resultsContainer) {
+        resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+}
