@@ -1,7 +1,7 @@
 /* Fast barcode fetch: cache (RAM+LS), preconnect, timeout, fastest-wins race. */
 (() => {
     const MEM = new Map();
-    const LS_KEY = 'hs:barcodeCache:v1';
+    const LS_KEY = 'hs:barcodeCache:v2'; // Bumped to v2 to force refresh
     const TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
     const AGG_URL = '/api/product/';
     const PROVIDERS = [
