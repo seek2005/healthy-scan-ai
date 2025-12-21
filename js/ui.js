@@ -356,12 +356,12 @@ export function displayResults(data) {
                             <div class="flex-1 min-w-0"> <!-- allow shrinking -->
                                 <h4 class="text-2xl font-bold text-gray-900 mb-1">Overall: <span class="text-sm px-2 py-1 rounded-full ${scoreBg} ${labelColorClass}">${scoreLabel}</span></h4>
                                 <p class="text-sm text-gray-500 leading-tight mb-2">
-                                    Breakdown by Nutrition, Additives and Processing.
+                                    Breakdown by Nutrition, Additives and Organic.
                                 </p>
                                 <div class="flex flex-wrap gap-x-3 gap-y-1 text-[10px] font-bold text-gray-400">
                                     <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> Nutrition</span>
                                     <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-orange-400"></span> Additives</span>
-                                    <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-red-400"></span> Processing</span>
+                                    <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-teal-500"></span> Organic</span>
                                 </div>
                             </div>
                         </div>
