@@ -1,6 +1,7 @@
 const { generateContentWithFallback, cleanJSON } = require('../services/gemini.service');
 const { calculatePortionAnalysis } = require('../utils/nutrition.utils');
 const fetch = require('node-fetch');
+const YukaScore = require('../utils/score_yuka.server');
 
 // In-memory cache for analysis results
 const resultCache = new Map();
@@ -19,65 +20,38 @@ exports.analyzeImage = async (req, res) => {
         - If Vegan/Keto is set, explicitly confirm or warn.
         ` : "";
 
-        const prompt = `You are a nutritionist AI. Analyze this nutrition label. ${profileContext}
+        const prompt = `You are a nutrition data extraction AI. Extract data from this nutrition label image exactly as requested.
         
-        SCORING RULES (CRITICAL - FOLLOW STRICTLY):
-        - **Base Score**: Start at 100.
-        - **Ultra-Processed Penalty**: If ingredients list contains HIGH QUANTITY of chemical additives (NOVA 4), DEDUCT 30-50 points.
-        - **Additives Penalty**: For EACH harmful additive (Red 40, Nitrates, etc), DEDUCT 15 points.
-        - **Sugar Context**: Do NOT penalize natural sugars found in Milk (Lactose) or Fruit significantly. Only penalize ADDED sugars (>10g).
-        - **Nutrient Penalties**:
-            - Sodium > 500mg: -15 points.
-            - Saturated Fat > 5g: -10 points.
-            - Sugar > 15g (and IS ADDED): -15 points.
-        - **Bonuses (Stackable)**:
-            - **Organic**: +15 points.
-            - **High Protein (>8g)**: +10 points.
-            - **Fiber (>3g)**: +5 points.
-            - **No Additives**: +10 points.
-
-        *Example 1 (Cheetos)*: Base 100 - 40 (Ultra Processed) - 15 (Yellow 6) - 10 (Sodium) = ~35 (Poor).
-        *Example 2 (Organic Milk)*: Base 100 - 0 (Natural Sugar) + 15 (Organic) + 10 (Protein) = ~100 (Excellent). (Max 100).
-
-        1. Identify product. 
-        2. Summarize health value. 
-        3. Analyze the product for "Positives" (Health benefits, good nutrients) and "Negatives" (High sugar, additives, processing).
-        4. EXTRACT the exact nutrient values:
-           - **SERVING SIZE**: Look for "Serving Size" (e.g. "1 oz (28g)"). Extract the GRAMS value (e.g. 28). If not found, estimating is okay (e.g. 30g).
-           - **CALORIES**: Look for "Calories". Use value matching Serv Size.
-           - **SUGAR**: Look for "Total Sugars". Use value matching Serv Size.
-           - **SODIUM**: Look for "Sodium". Use value matching Serv Size.
-           - **SAT FAT**: Look for "Saturated Fat". Use value matching Serv Size.
-           - **FIBER**: Look for "Dietary Fiber". Use value matching Serv Size.
-           - **PROTEIN**: Look for "Protein". Use value matching Serv Size.
-        5. List ALL ingredients found. Provide a short description (max 10 words) for EACH. Mark if harmful.
-        6. Suggest REAL US market alternative product. 
-        7. Calculate a "health_score" from 0 to 100 based on the RULES above.
-        8. Identify "suitability_tags" based on ingredients (e.g. "Vegan", "Gluten-Free", "Keto-Friendly", "Low Sodium", "High Protein", "Dairy-Free", "Organic", "Ultra-Processed").
+        CRITICAL: Return ONLY raw JSON. No introductory text. No markdown.
         
-        CRITICAL: Output ONLY raw JSON in English. No intro text.
-        { 
-          "summary": "string (use **bold** for emphasis)", 
-          "health_score": number (0-100),
-          "suitability_tags": ["string"],
-          "analysis": {
-              "negatives": [ { "title": "string (e.g. High Sugar)", "value": "string (e.g. 38g)", "description": "string (short explanation)" } ],
-              "positives": [ { "title": "string (e.g. Protein)", "value": "string (e.g. 10g)", "description": "string" } ]
+        EXTRACT the exact nutrient values and ingredient data:
+        - **SERVING SIZE**: Look for "Serving Size". Extract GRAMS (e.g. 28). If not found, estimate.
+        - **CALORIES**: Look for "Calories" per serving.
+        - **SUGAR**: "Total Sugars" per serving.
+        - **SODIUM**: "Sodium" per serving.
+        - **SAT FAT**: "Saturated Fat" per serving.
+        - **FIBER**: "Dietary Fiber" per serving.
+        - **PROTEIN**: "Protein" per serving.
+        
+        EXTRACT ingredients and allergens:
+        - **Ingredients**: List all. Flag harmful ones (artificial colors, preservatives, hydrogenated oils).
+        - **Allergens**: List declared allergens.
+        {
+          "extracted_nutrients": {
+            "serving_size_g": number,
+            "energy_kcal": number,
+            "sugar_g": number,
+            "sodium_mg": number,
+            "sat_fat_g": number,
+            "fiber_g": number,
+            "protein_g": number
           },
-          "extracted_nutrients": { 
-              "serving_size_g": number, 
-              "energy_kcal": number,
-              "sugar_g": number, 
-              "sodium_mg": number, 
-              "sat_fat_g": number,
-              "fiber_g": number,
-              "protein_g": number
-          },
-          "allergens": [
-            { "name": "string", "severity": "string (Low/Medium/High)", "description": "string" }
+          "ingredients_list": [
+            { "name": "string", "is_harmful": boolean, "description": "string (short)" }
           ],
-          "ingredients_list": [{"name": "string", "is_harmful": boolean, "description": "string"}],
-          "alternative": { "name": "string", "brand": "string", "score": "string", "reason": "string", "search_term": "string (optimized for Amazon search)" } 
+          "allergens": [
+            { "name": "string", "severity": "string", "description": "string" }
+          ]
         }`;
 
         const imageParts = [
@@ -99,8 +73,44 @@ exports.analyzeImage = async (req, res) => {
 
         const data = JSON.parse(jsonData);
 
-        // Calculate portion analysis programmatically if nutrients exist
+        // NORMALIZE AND SCORE
+        let yukaResult = { overall: 0, label: "Unknown", subscores: {} };
+
         if (data.extracted_nutrients) {
+            const ext = data.extracted_nutrients;
+            const serving = ext.serving_size_g || 100;
+            const factor = serving > 0 ? (100 / serving) : 1;
+
+            // Scale to 100g
+            const scaled = {
+                energy_kcal: (ext.energy_kcal || 0) * factor,
+                sugars_g: (ext.sugar_g || 0) * factor,
+                sodium_mg: (ext.sodium_mg || 0) * factor,
+                saturated_fat_g: (ext.sat_fat_g || 0) * factor,
+                fiber_g: (ext.fiber_g || 0) * factor,
+                protein_g: (ext.protein_g || 0) * factor
+            };
+
+            const productForScoring = {
+                name: "Scanned Product",
+                nutrients_basis: "per100g",
+                serving_size_gml: 100, // We are providing 100g scaled values
+                nutrients: scaled,
+                additives: (data.ingredients_list || []).filter(i => i.is_harmful).map(_ => ({ risk: "high" })),
+                organic: false
+            };
+
+            yukaResult = YukaScore.compute(productForScoring);
+
+            // Enrich response
+            data.health_score = yukaResult.overall;
+            data.score_label = yukaResult.label;
+            data.yuka_breakdown = yukaResult;
+            data.nutrients_100g = scaled;
+
+            // Recalculate Portion Analysis (using per-serving or per-100g? Usually portion analysis is relevant to serving)
+            // But function expects raw values. Let's pass Extracted (per serving) values if avail, else scaled?
+            // Actually existing code passed extracted values. We'll keep that.
             data.portion_analysis = calculatePortionAnalysis(
                 data.extracted_nutrients.sugar_g,
                 data.extracted_nutrients.sodium_mg,
@@ -198,50 +208,39 @@ exports.analyzeBarcode = async (req, res) => {
         - Highlight if product conflicts with these priorities.
         ` : "";
 
-        const prompt = `You are a nutritionist AI. Analyze this product data from a barcode scan. ${profileContext}
-        Product: ${JSON.stringify(productContext)}
-        REAL NUTRIENTS (Use these EXACTLY): ${JSON.stringify(realNutrients)}
+        const prompt = `You are a nutrition data extraction AI. Extract data from this nutrition label image exactly as requested.
         
-        SCORING RULES (CRITICAL - FOLLOW STRICTLY):
-        - **Base Score**: Start at 100.
-        - **Ultra-Processed Penalty**: If ingredients list contains HIGH QUANTITY of chemical additives (NOVA 4), DEDUCT 30-50 points.
-        - **Additives Penalty**: For EACH harmful additive (Red 40, Nitrates, etc), DEDUCT 15 points.
-        - **Sugar Context**: Do NOT penalize natural sugars found in Milk (Lactose) or Fruit significantly. Only penalize ADDED sugars (>10g).
-        - **Nutrient Penalties**:
-            - Sodium > 500mg: -15 points.
-            - Saturated Fat > 5g: -10 points.
-            - Sugar > 15g (and IS ADDED): -15 points.
-        - **Bonuses (Stackable)**:
-            - **Organic**: +15 points.
-            - **High Protein (>8g)**: +10 points.
-            - **Fiber (>3g)**: +5 points.
-            - **No Additives**: +10 points.
-
-        *Example 1 (Cheetos)*: Base 100 - 40 (Ultra Processed) - 15 (Yellow 6) - 10 (Sodium) = ~35 (Poor).
-        *Example 2 (Organic Milk)*: Base 100 - 0 (Natural Sugar) + 15 (Organic) + 10 (Protein) = ~100 (Excellent). (Max 100).
-
-        1. Identify product. 
-        2. Summarize health value. 
-        3. Analyze "Positives" vs "Negatives".
-        4. RETURN the 'extracted_nutrients' block using the REAL NUTRIENTS provided above.
-        5. List ALL ingredients found.
-        6. Suggest REAL US market alternative product. 
-        7. Calculate a "health_score" from 0 to 100 based on the RULES above.
-        8. Identify "suitability_tags" based on ingredients (e.g. "Vegan", "Gluten-Free", "Keto-Friendly", "Low Sodium", "High Protein", "Dairy-Free", "Organic", "Ultra-Processed").
+        CRITICAL: Return ONLY raw JSON. No introductory text. No markdown.
         
-        CRITICAL: Output ONLY raw JSON in English. No intro text.
-        { 
-          "summary": "string (use **bold** for emphasis)", 
-          "health_score": number (0-100),
-          "suitability_tags": ["string"],
-          "analysis": {
-              "negatives": [ { "title": "string", "value": "string", "description": "string" } ],
-              "positives": [ { "title": "string", "value": "string", "description": "string" } ]
+        EXTRACT the exact nutrient values and ingredient data:
+        - **SERVING SIZE**: Look for "Serving Size". Extract GRAMS (e.g. 28). If not found, estimate.
+        - **CALORIES**: Look for "Calories" per serving.
+        - **SUGAR**: "Total Sugars" per serving.
+        - **SODIUM**: "Sodium" per serving.
+        - **SAT FAT**: "Saturated Fat" per serving.
+        - **FIBER**: "Dietary Fiber" per serving.
+        - **PROTEIN**: "Protein" per serving.
+        
+        EXTRACT ingredients and allergens:
+        - **Ingredients**: List all. Flag harmful ones (artificial colors, preservatives, hydrogenated oils).
+        - **Allergens**: List declared allergens.
+        
+        {
+          "extracted_nutrients": {
+            "serving_size_g": number,
+            "energy_kcal": number,
+            "sugar_g": number,
+            "sodium_mg": number,
+            "sat_fat_g": number,
+            "fiber_g": number,
+            "protein_g": number
           },
-          "extracted_nutrients": { "serving_size_g": 0, "energy_kcal": ${realNutrients.energy_kcal}, "sugar_g": ${realNutrients.sugar_g}, "sodium_mg": ${realNutrients.sodium_mg}, "sat_fat_g": ${realNutrients.sat_fat_g}, "fiber_g": ${realNutrients.fiber_g}, "protein_g": ${realNutrients.protein_g} },
-          "allergens": [ { "name": "string", "severity": "string", "description": "string" } ],
-          "ingredients_list": [{"name": "string", "is_harmful": boolean, "description": "string"}],
-          "alternative": { "name": "string", "brand": "string", "score": "string", "reason": "string", "search_term": "string" } 
+          "ingredients_list": [
+            { "name": "string", "is_harmful": boolean, "description": "string (short)" }
+          ],
+          "allergens": [
+            { "name": "string", "severity": "string", "description": "string" }
+          ]
         }`;
 
         // Use Fallback here too - pass empty array for imageParts
@@ -260,6 +259,35 @@ exports.analyzeBarcode = async (req, res) => {
 
         // Forced Override with Real Data (Trust Code over AI)
         data.extracted_nutrients = realNutrients;
+
+        // SCORE WITH YUKA (Server-Side)
+        const productForScoring = {
+            name: product.product_name || "Scanned Product",
+            category: (product.categories_tags || []).join(' '), // OFF specific
+            nutrients_basis: "per100g", // We prioritized 100g
+            serving_size_gml: 100,
+            nutrients: {
+                energy_kcal: realNutrients.energy_kcal,
+                sugars_g: realNutrients.sugar_g,
+                saturated_fat_g: realNutrients.sat_fat_g,
+                sodium_mg: realNutrients.sodium_mg,
+                fiber_g: realNutrients.fiber_g,
+                protein_g: realNutrients.protein_g
+            },
+            additives: (product.additives_tags || []).map(t => ({ risk: "high" })), // Simple risk mapping or use AI ingredients
+            organic: (product.labels_tags || []).some(l => l.includes('organic'))
+        };
+        // Note: Additives from OFF are codes. AI might be better at parsing risk from ingredients list if OFF data is sparse, 
+        // but strict standard uses Yuka. For now, let's use the additives list from OFF if available, or fall back to AI risk flags?
+        // User "Verify that the barcode flow ... uses YukaScore.compute()".
+        // I'll use the AI's "ingredients_list" risk flags if OFF additives are tricky to parse rapidly without a DB.
+        // Actually, let's use the AI's harmful flag since the prompt asks for it.
+        productForScoring.additives = (data.ingredients_list || []).filter(i => i.is_harmful).map(_ => ({ risk: "high" }));
+
+        const yukaResult = YukaScore.compute(productForScoring);
+        data.health_score = yukaResult.overall;
+        data.score_label = yukaResult.label;
+        data.yuka_breakdown = yukaResult;
 
         // Calculate portion analysis programmatically
         data.portion_analysis = calculatePortionAnalysis(

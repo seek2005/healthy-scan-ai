@@ -220,27 +220,9 @@ export function displayResults(data) {
                 };
             }
 
-            // 2. STRICT PENALTY: Ultra-Processed (NOVA 4 or Tag or Keywords)
-            // Combine text from raw text OR parsed list (for AI path)
-            const listText = (data.ingredients_list || []).map(i => i.name).join(' ');
-            const fullIngText = (data.ingredients_text || '') + ' ' + listText;
-
+            // 2. POLYFILL: Parse ingredients_text if list is missing (Fast Path)
             const UPF_KEYWORDS = [/maltodextrin/i, /corn syrup/i, /high fructose/i, /dextrose/i, /hydrogenated/i, /artificial/i, /color/i, /lake/i, /glutamate/i, /disodium/i, /benzoate/i, /yellow 5/i, /yellow 6/i, /red 40/i, /blue 1/i];
-            const hasUPFIngredients = fullIngText.match(new RegExp(UPF_KEYWORDS.map(r => r.source).join('|'), 'i'));
 
-            const isProcessed = (data.nova_group === 4) ||
-                (data.suitability_tags || []).some(t => t.includes('Processed') || t.includes('Ultra')) ||
-                !!hasUPFIngredients;
-
-            if (isProcessed) {
-                // Add 4 virtual high-risk additives to force score to 0/30 for additives
-                yukaProduct.additives.push({ risk: "high" });
-                yukaProduct.additives.push({ risk: "high" });
-                yukaProduct.additives.push({ risk: "high" });
-                yukaProduct.additives.push({ risk: "high" });
-            }
-
-            // 3. POLYFILL: Parse ingredients_text if list is missing (Fast Path)
             if ((!data.ingredients_list || data.ingredients_list.length === 0) && data.ingredients_text) {
                 // Simple split by comma, respecting parentheses roughly
                 data.ingredients_list = data.ingredients_text
@@ -258,11 +240,11 @@ export function displayResults(data) {
                     });
             }
 
-            // 4. POLYFILL: Fallback Alternative if missing and score is low
-            // We'll compute a temp score here just to check if we need an alternative
-            const tempScore = window.YukaScore.compute(yukaProduct).overall;
+            // 3. POLYFILL: Fallback Alternative if missing and score is low
+            const score = data.health_score ?? window.YukaScore.compute(yukaProduct).overall;
+            const scoreLabel = data.score_label ?? (score >= 75 ? "Excellent" : score >= 50 ? "Good" : score >= 25 ? "Mediocre" : "Bad");
 
-            if (!data.alternative && tempScore < 50) {
+            if (!data.alternative && score < 50) {
                 const cat = data.category ? data.category.split(',')[0] : "Snack";
                 data.alternative = {
                     name: `Healthier ${cat} Options`,
@@ -271,15 +253,6 @@ export function displayResults(data) {
                     score: "Better"
                 };
             }
-
-            // Calculate score using the new policy (Nutrition + Additives + Processing + caps)
-            const policy = window.ScorePolicy.compute(yukaProduct, {
-                nova_group: data.nova_group,
-                ingredients_text: data.ingredients_text,
-                ingredients_list: data.ingredients_list || []
-            });
-            const score = policy.overall;
-            const scoreLabel = policy.label;
 
             // Map Label to Colors
             let scoreColor = '#10b981'; // Excellent (Green)
