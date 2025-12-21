@@ -176,10 +176,10 @@ export function displayResults(data) {
             }
 
             const mappedNutrients = {
+                energy_kcal: n.energy_kcal ?? (ext.energy_kcal ? ext.energy_kcal * aiFactor : 0),
                 sugars_g: n.sugars_g ?? (ext.sugar_g ? ext.sugar_g * aiFactor : 0),
                 saturated_fat_g: n.saturated_fat_g ?? (ext.sat_fat_g ? ext.sat_fat_g * aiFactor : 0),
                 sodium_mg: n.sodium_mg ?? (ext.sodium_mg ? ext.sodium_mg * aiFactor : 0),
-                energy_kcal: n.energy_kcal ?? (ext.energy_kcal ? ext.energy_kcal * aiFactor : 0),
                 fiber_g: n.fiber_g ?? (ext.fiber_g ? ext.fiber_g * aiFactor : 0),
                 protein_g: n.protein_g ?? (ext.protein_g ? ext.protein_g * aiFactor : 0)
             };
@@ -188,7 +188,7 @@ export function displayResults(data) {
                 name: data.name || "Product",
                 category: data.category || "foods",
                 nutrients_basis: "per100g",
-                serving_size_gml: 100,
+                serving_size_gml: data.extracted_nutrients?.serving_size_g || 100,
                 nutrients: mappedNutrients,
                 additives: data.additives
                     ? data.additives

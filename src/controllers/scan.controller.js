@@ -44,9 +44,12 @@ exports.analyzeImage = async (req, res) => {
         3. Analyze the product for "Positives" (Health benefits, good nutrients) and "Negatives" (High sugar, additives, processing).
         4. EXTRACT the exact nutrient values:
            - **SERVING SIZE**: Look for "Serving Size" (e.g. "1 oz (28g)"). Extract the GRAMS value (e.g. 28). If not found, estimating is okay (e.g. 30g).
-           - **SUGAR**: Look for "Total Sugars". Use the value that matches the "Serving Size".
-           - **SODIUM**: Look for "Sodium". Use the value that matches the "Serving Size".
-           - **SAT FAT**: Look for "Saturated Fat". Use the value that matches the "Serving Size".
+           - **CALORIES**: Look for "Calories". Use value matching Serv Size.
+           - **SUGAR**: Look for "Total Sugars". Use value matching Serv Size.
+           - **SODIUM**: Look for "Sodium". Use value matching Serv Size.
+           - **SAT FAT**: Look for "Saturated Fat". Use value matching Serv Size.
+           - **FIBER**: Look for "Dietary Fiber". Use value matching Serv Size.
+           - **PROTEIN**: Look for "Protein". Use value matching Serv Size.
         5. List ALL ingredients found. Provide a short description (max 10 words) for EACH. Mark if harmful.
         6. Suggest REAL US market alternative product. 
         7. Calculate a "health_score" from 0 to 100 based on the RULES above.
@@ -61,7 +64,15 @@ exports.analyzeImage = async (req, res) => {
               "negatives": [ { "title": "string (e.g. High Sugar)", "value": "string (e.g. 38g)", "description": "string (short explanation)" } ],
               "positives": [ { "title": "string (e.g. Protein)", "value": "string (e.g. 10g)", "description": "string" } ]
           },
-          "extracted_nutrients": { "serving_size_g": number, "sugar_g": number, "sodium_mg": number, "sat_fat_g": number },
+          "extracted_nutrients": { 
+              "serving_size_g": number, 
+              "energy_kcal": number,
+              "sugar_g": number, 
+              "sodium_mg": number, 
+              "sat_fat_g": number,
+              "fiber_g": number,
+              "protein_g": number
+          },
           "allergens": [
             { "name": "string", "severity": "string (Low/Medium/High)", "description": "string" }
           ],
@@ -227,7 +238,7 @@ exports.analyzeBarcode = async (req, res) => {
               "negatives": [ { "title": "string", "value": "string", "description": "string" } ],
               "positives": [ { "title": "string", "value": "string", "description": "string" } ]
           },
-          "extracted_nutrients": { "energy_kcal": ${realNutrients.energy_kcal}, "sugar_g": ${realNutrients.sugar_g}, "sodium_mg": ${realNutrients.sodium_mg}, "sat_fat_g": ${realNutrients.sat_fat_g}, "fiber_g": ${realNutrients.fiber_g}, "protein_g": ${realNutrients.protein_g} },
+          "extracted_nutrients": { "serving_size_g": 0, "energy_kcal": ${realNutrients.energy_kcal}, "sugar_g": ${realNutrients.sugar_g}, "sodium_mg": ${realNutrients.sodium_mg}, "sat_fat_g": ${realNutrients.sat_fat_g}, "fiber_g": ${realNutrients.fiber_g}, "protein_g": ${realNutrients.protein_g} },
           "allergens": [ { "name": "string", "severity": "string", "description": "string" } ],
           "ingredients_list": [{"name": "string", "is_harmful": boolean, "description": "string"}],
           "alternative": { "name": "string", "brand": "string", "score": "string", "reason": "string", "search_term": "string" } 
