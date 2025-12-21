@@ -265,15 +265,14 @@ export function displayResults(data) {
                 };
             }
 
-            // Calculate Score using new policy (Nutrition + Additives + Processing)
-            const policyResult = window.ScorePolicy.compute(yukaProduct, {
+            // Calculate score using the new policy (Nutrition + Additives + Processing + caps)
+            const policy = window.ScorePolicy.compute(yukaProduct, {
                 nova_group: data.nova_group,
                 ingredients_text: data.ingredients_text,
                 ingredients_list: data.ingredients_list || []
             });
-
-            const score = policyResult.overall;
-            const scoreLabel = policyResult.label;
+            const score = policy.overall;
+            const scoreLabel = policy.label;
 
             // Map Label to Colors
             let scoreColor = '#10b981'; // Excellent (Green)
