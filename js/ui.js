@@ -168,13 +168,20 @@ export function displayResults(data) {
             const ext = data.extracted_nutrients || {};
 
             // Normalize Nutrients for Yuka
+            // AI data (ext) is usually Per Serving, while Fast Data (n) is Per 100g.
+            // If we have AI (ext) and a serving size, scale to 100g.
+            let aiFactor = 1;
+            if (ext.serving_size_g && ext.serving_size_g > 0) {
+                aiFactor = 100 / ext.serving_size_g;
+            }
+
             const mappedNutrients = {
-                sugars_g: n.sugars_g ?? ext.sugar_g ?? 0,
-                saturated_fat_g: n.saturated_fat_g ?? ext.sat_fat_g ?? 0,
-                sodium_mg: n.sodium_mg ?? ext.sodium_mg ?? 0,
-                energy_kcal: n.energy_kcal ?? ext.energy_kcal ?? 0,
-                fiber_g: n.fiber_g ?? ext.fiber_g ?? 0,
-                protein_g: n.protein_g ?? ext.protein_g ?? 0
+                sugars_g: n.sugars_g ?? (ext.sugar_g ? ext.sugar_g * aiFactor : 0),
+                saturated_fat_g: n.saturated_fat_g ?? (ext.sat_fat_g ? ext.sat_fat_g * aiFactor : 0),
+                sodium_mg: n.sodium_mg ?? (ext.sodium_mg ? ext.sodium_mg * aiFactor : 0),
+                energy_kcal: n.energy_kcal ?? (ext.energy_kcal ? ext.energy_kcal * aiFactor : 0),
+                fiber_g: n.fiber_g ?? (ext.fiber_g ? ext.fiber_g * aiFactor : 0),
+                protein_g: n.protein_g ?? (ext.protein_g ? ext.protein_g * aiFactor : 0)
             };
 
             const yukaProduct = {

@@ -43,9 +43,10 @@ exports.analyzeImage = async (req, res) => {
         2. Summarize health value. 
         3. Analyze the product for "Positives" (Health benefits, good nutrients) and "Negatives" (High sugar, additives, processing).
         4. EXTRACT the exact nutrient values:
-           - **SUGAR**: Look for "Total Sugars". ALWAYS use the "Per Container" or "Per Package" column if available. If not, use the LARGEST number found. (e.g. if 20g and 46g, use 46).
-           - **SODIUM**: Look for "Sodium". Use "Per Container" or LARGEST value.
-           - **SAT FAT**: Look for "Saturated Fat". Use "Per Container" or LARGEST value.
+           - **SERVING SIZE**: Look for "Serving Size" (e.g. "1 oz (28g)"). Extract the GRAMS value (e.g. 28). If not found, estimating is okay (e.g. 30g).
+           - **SUGAR**: Look for "Total Sugars". Use the value that matches the "Serving Size".
+           - **SODIUM**: Look for "Sodium". Use the value that matches the "Serving Size".
+           - **SAT FAT**: Look for "Saturated Fat". Use the value that matches the "Serving Size".
         5. List ALL ingredients found. Provide a short description (max 10 words) for EACH. Mark if harmful.
         6. Suggest REAL US market alternative product. 
         7. Calculate a "health_score" from 0 to 100 based on the RULES above.
@@ -60,7 +61,7 @@ exports.analyzeImage = async (req, res) => {
               "negatives": [ { "title": "string (e.g. High Sugar)", "value": "string (e.g. 38g)", "description": "string (short explanation)" } ],
               "positives": [ { "title": "string (e.g. Protein)", "value": "string (e.g. 10g)", "description": "string" } ]
           },
-          "extracted_nutrients": { "sugar_g": number, "sodium_mg": number, "sat_fat_g": number },
+          "extracted_nutrients": { "serving_size_g": number, "sugar_g": number, "sodium_mg": number, "sat_fat_g": number },
           "allergens": [
             { "name": "string", "severity": "string (Low/Medium/High)", "description": "string" }
           ],
