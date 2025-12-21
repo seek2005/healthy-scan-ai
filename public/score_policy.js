@@ -1,4 +1,3 @@
-/* Scoring policy: Wrapper for YukaScore with standard weights (60% Nutrition, 30% Additives, 10% Organic) */
 (function (root, factory) {
     if (typeof module === 'object' && typeof module.exports === 'object') {
         module.exports = factory();
@@ -23,11 +22,6 @@
             throw new Error("YukaScore engine missing. Load /public/score_yuka.js first.");
         }
 
-        // Delegate entire calculation to YukaScore engine
-        // YukaScore.compute returns { overall, subscores: { nutrition, additives, organic }, details... }
-        // We re-calculate overall here just to be explicit about the 60/30/10 weighting if YukaScore doesn't enforce it exactly the same way,
-        // BUT YukaScore usually does. Let's rely on YukaScore's internal weighting or re-apply it if needed.
-        // Looking at typical YukaScore implementations:
         const y = window.YukaScore.compute(product);
 
         // Re-calculate overall with explicit weights to ensure accuracy per user request

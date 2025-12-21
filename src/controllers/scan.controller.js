@@ -3,7 +3,6 @@ const { calculatePortionAnalysis } = require('../utils/nutrition.utils');
 const fetch = require('node-fetch');
 const YukaScore = require('../utils/score_yuka.server');
 
-// In-memory cache for analysis results
 const resultCache = new Map();
 
 exports.analyzeImage = async (req, res) => {
@@ -63,7 +62,7 @@ exports.analyzeImage = async (req, res) => {
             }
         ];
 
-        // Use the fallback function
+
         const result = await generateContentWithFallback(prompt, imageParts);
         const response = await result.response;
         const text = response.text();
@@ -73,7 +72,7 @@ exports.analyzeImage = async (req, res) => {
 
         const data = JSON.parse(jsonData);
 
-        // NORMALIZE AND SCORE
+
         let yukaResult = { overall: 0, label: "Unknown", subscores: {} };
 
         if (data.extracted_nutrients) {
@@ -81,7 +80,7 @@ exports.analyzeImage = async (req, res) => {
             const serving = ext.serving_size_g || 100;
             const factor = serving > 0 ? (100 / serving) : 1;
 
-            // Scale to 100g
+
             const scaled = {
                 energy_kcal: (ext.energy_kcal || 0) * factor,
                 sugars_g: (ext.sugar_g || 0) * factor,
@@ -94,7 +93,7 @@ exports.analyzeImage = async (req, res) => {
             const productForScoring = {
                 name: "Scanned Product",
                 nutrients_basis: "per100g",
-                serving_size_gml: 100, // We are providing 100g scaled values
+                serving_size_gml: 100,
                 nutrients: scaled,
                 additives: (data.ingredients_list || []).filter(i => i.is_harmful).map(_ => ({ risk: "high" })),
                 organic: false
@@ -102,13 +101,13 @@ exports.analyzeImage = async (req, res) => {
 
             yukaResult = YukaScore.compute(productForScoring);
 
-            // Enrich response
+
             data.health_score = yukaResult.overall;
             data.score_label = yukaResult.label;
             data.yuka_breakdown = yukaResult;
             data.nutrients_100g = scaled;
 
-            // Recalculate Portion Analysis using 100g values for consistency with Barcode flow
+
             data.portion_analysis = calculatePortionAnalysis(
                 data.nutrients_100g.sugars_g,
                 data.nutrients_100g.sodium_mg,
@@ -129,14 +128,8 @@ exports.analyzeBarcode = async (req, res) => {
         const { barcode, userProfile } = req.body;
         if (!barcode) return res.status(400).json({ error: 'No barcode provided' });
 
-        // 1. Check Cache
+
         if (resultCache.has(barcode)) {
-            // Note: Cache currently ignores profile (personalization drawback). 
-            // Ideally we cache by barcode+profile_hash, or re-run specific analysis.
-            // For prototype, we skip cache if profile is present? Or just accept cached generic data?
-            // "Senior" decision: If profile exists, skip cache OR re-prompt with cached data.
-            // Let's re-prompt using fetched data if simple cache is hit, OR just separate cache keys.
-            // Simple fix: Append profile signature to cache key.
             const cacheKey = barcode + (userProfile ? JSON.stringify(userProfile) : "");
             if (resultCache.has(cacheKey)) {
                 console.log(`⚡ CACHE HIT for ${cacheKey}`);
@@ -144,15 +137,10 @@ exports.analyzeBarcode = async (req, res) => {
             }
         }
 
-        // ... (fetch logic) ...
-        // We need to define cacheKey later to save it.
         const cacheKey = barcode + (userProfile ? JSON.stringify(userProfile) : "");
-
-
 
         console.log(`fetching data for barcode: ${barcode} `);
 
-        // 1. Fetch product data from OpenFoodFacts
         const offResponse = await fetch(`https://world.openfoodfacts.org/api/v2/product/${barcode}.json`);
         const offData = await offResponse.json();
 
@@ -161,16 +149,7 @@ exports.analyzeBarcode = async (req, res) => {
         }
 
         const product = offData.product;
-        const productContext = {
-            name: product.product_name,
-            brand: product.brands,
-            categories: product.categories,
-            nutriments: product.nutriments,
-            ingredients: product.ingredients_text
-        };
 
-        // 2. EXTRACT NUTRIENTS DIRECTLY (Hard Data > AI Guess)
-        // Prioritize 100g to ensure "Bad" foods are caught regardless of small serving sizes
         const getNutrient = (key) => {
             const n = product.nutriments;
             return n[`${key}_100g`] || n[`${key}_serving`] || n[key] || 0;
@@ -183,7 +162,6 @@ exports.analyzeBarcode = async (req, res) => {
         if (sodiumUnit === 'g') finalSodiumMg = sodiumVal * 1000;
         if (sodiumUnit === 'mg') finalSodiumMg = sodiumVal;
 
-        // If sodium is 0, try to find sodium_100g directly
         if (!finalSodiumMg && product.nutriments.sodium_100g) {
             finalSodiumMg = product.nutriments.sodium_100g * 1000;
         }
@@ -197,7 +175,6 @@ exports.analyzeBarcode = async (req, res) => {
             protein_g: Number(getNutrient('proteins') || 0)
         };
 
-        // 3. Send data to Gemini for Qualitative Analysis
         const profileContext = userProfile ? `
         USER PROFILE:
         - Age Group: ${userProfile.ageGroup || "General"}
@@ -241,28 +218,25 @@ exports.analyzeBarcode = async (req, res) => {
           ]
         }`;
 
-        // Use Fallback here too - pass empty array for imageParts
+
         const result = await generateContentWithFallback(prompt, []);
         const response = await result.response;
         const text = response.text();
 
-        console.log("--- DEBUG: Barcode AI Response ---");
-        console.log(text);
-        console.log("----------------------------------");
+
 
         const cleaned = cleanJSON(text);
         if (!cleaned) throw new Error("Failed to parse JSON from AI response");
 
         const data = JSON.parse(cleaned);
 
-        // Forced Override with Real Data (Trust Code over AI)
+
         data.extracted_nutrients = realNutrients;
 
-        // SCORE WITH YUKA (Server-Side)
         const productForScoring = {
             name: product.product_name || "Scanned Product",
-            category: (product.categories_tags || []).join(' '), // OFF specific
-            nutrients_basis: "per100g", // We prioritized 100g
+            category: (product.categories_tags || []).join(' '),
+            nutrients_basis: "per100g",
             serving_size_gml: 100,
             nutrients: {
                 energy_kcal: realNutrients.energy_kcal,
@@ -272,14 +246,9 @@ exports.analyzeBarcode = async (req, res) => {
                 fiber_g: realNutrients.fiber_g,
                 protein_g: realNutrients.protein_g
             },
-            additives: (product.additives_tags || []).map(t => ({ risk: "high" })), // Simple risk mapping or use AI ingredients
+            additives: (product.additives_tags || []).map(t => ({ risk: "high" })),
             organic: (product.labels_tags || []).some(l => l.includes('organic'))
         };
-        // Note: Additives from OFF are codes. AI might be better at parsing risk from ingredients list if OFF data is sparse, 
-        // but strict standard uses Yuka. For now, let's use the additives list from OFF if available, or fall back to AI risk flags?
-        // User "Verify that the barcode flow ... uses YukaScore.compute()".
-        // I'll use the AI's "ingredients_list" risk flags if OFF additives are tricky to parse rapidly without a DB.
-        // Actually, let's use the AI's harmful flag since the prompt asks for it.
         productForScoring.additives = (data.ingredients_list || []).filter(i => i.is_harmful).map(_ => ({ risk: "high" }));
 
         const yukaResult = YukaScore.compute(productForScoring);
@@ -287,14 +256,14 @@ exports.analyzeBarcode = async (req, res) => {
         data.score_label = yukaResult.label;
         data.yuka_breakdown = yukaResult;
 
-        // Calculate portion analysis programmatically
+
         data.portion_analysis = calculatePortionAnalysis(
             data.extracted_nutrients.sugar_g,
             data.extracted_nutrients.sodium_mg,
             data.extracted_nutrients.sat_fat_g
         );
 
-        // Save to Cache
+
         resultCache.set(cacheKey, data);
         res.json(data);
 
@@ -305,8 +274,8 @@ exports.analyzeBarcode = async (req, res) => {
 };
 
 exports.debugModels = async (req, res) => {
-    const fetch = require('node-fetch'); // ensuring fetch is available
-    const { key } = require('../services/gemini.service'); // circular dependency potential if not careful, but key is exported
+    const fetch = require('node-fetch');
+    const { key } = require('../services/gemini.service');
 
     try {
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);

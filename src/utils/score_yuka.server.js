@@ -1,4 +1,3 @@
-/* Server-side compatible Yuka Score */
 const WEIGHTS = { nutrition: 0.60, additives: 0.30, organic: 0.10 };
 const ADDITIVE_PENALTY = { high: 35, medium: 15, low: 0, unknown: 5 };
 const LETTER_TO_PERCENT = { A: 100, B: 80, C: 60, D: 40, E: 20 };

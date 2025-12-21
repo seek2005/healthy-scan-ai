@@ -123,13 +123,9 @@ export function resetUI(imageUpload) {
     document.getElementById('resultsContainer').classList.remove('flex', 'flex-col');
     document.getElementById('statusMessage').classList.add('hidden');
 
-    // Restore Start Analysis button
     const scanBtn = document.getElementById('scanButton');
     if (scanBtn) scanBtn.classList.remove('hidden');
 
-    // Restore Recent Scans (if not empty - handled by renderHistory, but good to unhide container)
-    // Actually renderHistory handles visibility, so just ensure we don't force hide it unless needed.
-    // For now, let's just make sure we don't leave it permanently hidden if renderHistory doesn't run immediately.
     const recentScans = document.getElementById('recentScansContainer');
     if (recentScans && recentScans.children.length > 0) recentScans.classList.remove('hidden');
 
@@ -146,30 +142,22 @@ export function displayResults(data) {
     const defaultView = document.getElementById('defaultView');
     const previewView = document.getElementById('previewView');
     if (defaultView) defaultView.classList.add('hidden');
-    // Keep preview view visible if it has an image
     if (previewView && document.getElementById('imagePreview').src) {
         previewView.classList.remove('hidden');
-        // HIDE the original 'Start Analysis' button to avoid clutter
         const originalScanBtn = document.getElementById('scanButton');
         if (originalScanBtn) originalScanBtn.classList.add('hidden');
     }
 
-    // Hide Recent Scans to focus on result
     const recentScans = document.getElementById('recentScansContainer');
     if (recentScans) recentScans.classList.add('hidden');
 
-    // 0. AI Product Analysis (Summary)
     const summaryContainer = document.getElementById('productAnalysisContainer');
     if (summaryContainer) {
         summaryContainer.classList.remove('hidden');
-        if (data.summary || data.nutrients) { // Accept Fast Data OR AI Data
-            // Prepare data for Yuka Scorer
+        if (data.summary || data.nutrients) {
             const n = data.nutrients || {};
             const ext = data.extracted_nutrients || {};
 
-            // Normalize Nutrients for Yuka
-            // AI data (ext) is usually Per Serving, while Fast Data (n) is Per 100g.
-            // If we have AI (ext) and a serving size, scale to 100g.
             let aiFactor = 1;
             if (ext.serving_size_g && ext.serving_size_g > 0) {
                 aiFactor = 100 / ext.serving_size_g;
@@ -196,7 +184,6 @@ export function displayResults(data) {
                 organic: data.organic !== undefined ? data.organic : (data.suitability_tags || []).includes("Organic")
             };
 
-            // 1. Recover "Age-Based Breakdown" if missing (Fast Path)
             if (!data.portion_analysis && yukaProduct.nutrients) {
                 const s = yukaProduct.nutrients.sugars_g || 0;
                 const sod = yukaProduct.nutrients.sodium_mg || 0;
@@ -220,16 +207,14 @@ export function displayResults(data) {
                 };
             }
 
-            // 2. POLYFILL: Parse ingredients_text if list is missing (Fast Path)
             const UPF_KEYWORDS = [/maltodextrin/i, /corn syrup/i, /high fructose/i, /dextrose/i, /hydrogenated/i, /artificial/i, /color/i, /lake/i, /glutamate/i, /disodium/i, /benzoate/i, /yellow 5/i, /yellow 6/i, /red 40/i, /blue 1/i];
 
             if ((!data.ingredients_list || data.ingredients_list.length === 0) && data.ingredients_text) {
-                // Simple split by comma, respecting parentheses roughly
                 data.ingredients_list = data.ingredients_text
-                    .split(/,(?![^()]*\))/) // Split by comma NOT inside parentheses
+                    .split(/,(?![^()]*\))/)
                     .map(s => s.trim())
                     .filter(s => s.length > 1)
-                    .slice(0, 20) // Limit to 20 tags
+                    .slice(0, 20)
                     .map(name => {
                         const isBad = UPF_KEYWORDS.some(r => r.test(name));
                         return {
@@ -240,7 +225,6 @@ export function displayResults(data) {
                     });
             }
 
-            // 3. POLYFILL: Fallback Alternative if missing and score is low
             const score = data.health_score ?? window.YukaScore.compute(yukaProduct).overall;
             const scoreLabel = data.score_label ?? (score >= 75 ? "Excellent" : score >= 50 ? "Good" : score >= 25 ? "Mediocre" : "Bad");
 
@@ -273,7 +257,6 @@ export function displayResults(data) {
                 labelColorClass = 'text-red-700';
             }
 
-            // Suitability Tags Logic
             const tags = data.suitability_tags || ["General Use"];
             const tagsHtml = tags.map(tag => {
                 let colorClass = 'bg-emerald-100 text-emerald-800 border-emerald-200';
@@ -285,7 +268,6 @@ export function displayResults(data) {
             }).join('');
 
             summaryContainer.innerHTML = `
-                <!-- Action Buttons (Reset/Scan) -->
                 <div class="flex gap-4 mb-8 justify-center animate-fade-in-up">
                     <button onclick="resetUI()" class="flex-1 py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl transition-all flex items-center justify-center gap-2">
                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
@@ -303,10 +285,8 @@ export function displayResults(data) {
                     </button>
                 </div>
     
-                <!-- New Grid Layout -->
                 <div class="grid md:grid-cols-2 gap-6 mb-8">
                 
-                    <!-- Card 1: AI Product Analysis (Score) -->
                     <div class="glass-panel rounded-[1.5rem] p-6 bg-gradient-to-r from-orange-50 to-amber-50 shadow-xl border border-orange-100/50 flex flex-col justify-between">
                         <div class="flex items-center gap-2 mb-4">
                              <div class="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
@@ -340,7 +320,6 @@ export function displayResults(data) {
                         </div>
                     </div>
 
-                    <!-- Card 2: Is it for me? (Suitability) -->
                     <div class="glass-panel rounded-[1.5rem] p-6 bg-gradient-to-r from-orange-50 to-amber-50 shadow-xl border border-orange-100/50">
                         <div class="flex items-center gap-2 mb-4">
                              <div class="p-2 bg-blue-50 text-blue-600 rounded-lg">
@@ -360,7 +339,6 @@ export function displayResults(data) {
         }
     }
 
-    // 1. Allergen Alerts
     const allergenContainer = document.getElementById('allergenContainer');
     if (allergenContainer) {
         allergenContainer.innerHTML = '';
@@ -393,10 +371,9 @@ export function displayResults(data) {
         }
     }
 
-    // 2. Table (Age Breakdown)
     const tableElement = document.getElementById('portionAnalysisTable');
     if (tableElement) {
-        const parentCard = tableElement.closest('.glass-panel'); // Re-introduced definition
+        const parentCard = tableElement.closest('.glass-panel');
         if (parentCard) {
             parentCard.className = 'glass-panel rounded-[1.5rem] p-4 md:p-10 bg-gradient-to-r from-orange-50 to-amber-50 shadow-xl border border-orange-100/50';
             const headerIcon = parentCard.querySelector('.p-2');
@@ -439,11 +416,10 @@ export function displayResults(data) {
         tableElement.innerHTML = rows;
     }
 
-    // 3. Ingredients
     const ingContainer = document.getElementById('ingredientsContainer');
     if (ingContainer) {
         ingContainer.innerHTML = '';
-        const parentCard = ingContainer.closest('.glass-panel'); // Re-introduced definition
+        const parentCard = ingContainer.closest('.glass-panel');
         if (parentCard) {
             parentCard.className = 'glass-panel rounded-[1.5rem] p-4 md:p-10 bg-gradient-to-r from-orange-50 to-amber-50 shadow-xl border border-orange-100/50';
             const headerIcon = parentCard.querySelector('.p-2');
@@ -465,7 +441,6 @@ export function displayResults(data) {
         }
     }
 
-    // 4. Smart Alt
     const altContainer = document.getElementById('altContainer');
     if (altContainer && data.alternative) {
         const amazonUrl = `https://www.amazon.com/s?k=${encodeURIComponent(data.alternative.brand + ' ' + data.alternative.name)}`;

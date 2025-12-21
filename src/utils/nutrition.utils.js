@@ -1,11 +1,10 @@
 const DAILY_LIMITS = {
-    "Children (4-8)": { sugar: 25, sodium: 1200, fat: 10 }, // g, mg, g
+    "Children (4-8)": { sugar: 25, sodium: 1200, fat: 10 },
     "Adults (19-50)": { sugar: 50, sodium: 2300, fat: 20 },
     "Seniors (51+)": { sugar: 30, sodium: 1500, fat: 15 }
 };
 
 function calculatePortionAnalysis(sugarG, sodiumMg, satFatG) {
-    // Default to 0 if null/undefined
     const s = sugarG || 0;
     const sod = sodiumMg || 0;
     const f = satFatG || 0;
@@ -20,7 +19,7 @@ function calculatePortionAnalysis(sugarG, sodiumMg, satFatG) {
         const getRec = (pct) => pct > 40 ? "High" : pct > 20 ? "Medium" : "Low";
 
         result[stage] = {
-            sugar: getRec(sugarPct), // Client expects 'sugar'
+            sugar: getRec(sugarPct),
             sodium: getRec(sodiumPct),
             saturated_fat: getRec(fatPct)
         };

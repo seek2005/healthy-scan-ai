@@ -3,7 +3,6 @@ const dotenv = require('dotenv');
 
 dotenv.config();
 
-// Initialize Gemini
 const key = process.env.GEMINI_API_KEY;
 if (!key) {
     console.error("[CRITICAL] No API Key found in environment variables!");
