@@ -108,13 +108,11 @@ exports.analyzeImage = async (req, res) => {
             data.yuka_breakdown = yukaResult;
             data.nutrients_100g = scaled;
 
-            // Recalculate Portion Analysis (using per-serving or per-100g? Usually portion analysis is relevant to serving)
-            // But function expects raw values. Let's pass Extracted (per serving) values if avail, else scaled?
-            // Actually existing code passed extracted values. We'll keep that.
+            // Recalculate Portion Analysis using 100g values for consistency with Barcode flow
             data.portion_analysis = calculatePortionAnalysis(
-                data.extracted_nutrients.sugar_g,
-                data.extracted_nutrients.sodium_mg,
-                data.extracted_nutrients.sat_fat_g
+                data.nutrients_100g.sugars_g,
+                data.nutrients_100g.sodium_mg,
+                data.nutrients_100g.saturated_fat_g
             );
         }
 
