@@ -265,19 +265,15 @@ export function displayResults(data) {
                 };
             }
 
-            // Calculate Score based on Nutrients + Additives + Organic
-            const y = window.YukaScore.compute(yukaProduct);
-            let score = y.overall;
+            // Calculate Score using new policy (Nutrition + Additives + Processing)
+            const policyResult = window.ScorePolicy.compute(yukaProduct, {
+                nova_group: data.nova_group,
+                ingredients_text: data.ingredients_text,
+                ingredients_list: data.ingredients_list || []
+            });
 
-            // MANUAL OVERRIDES for obvious junk food thresholds (Per 100g)
-            if (yukaProduct.nutrients.sodium_mg > 800) {
-                score = Math.min(score, 35);
-            }
-            if (yukaProduct.nutrients.saturated_fat_g > 10) {
-                score = Math.min(score, 35);
-            }
-
-            const scoreLabel = score >= 75 ? 'Excellent' : score >= 50 ? 'Good' : score >= 25 ? 'Mediocre' : 'Bad';
+            const score = policyResult.overall;
+            const scoreLabel = policyResult.label;
 
             // Map Label to Colors
             let scoreColor = '#10b981'; // Excellent (Green)
