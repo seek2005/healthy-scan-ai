@@ -243,14 +243,7 @@ exports.analyzeBarcode = async (req, res) => {
         const data = JSON.parse(cleaned);
 
 
-        const realNutrients = {
-            energy_kcal: Number(getNutrient('energy-kcal') || 0),
-            sugar_g: Number(getNutrient('sugars') || 0),
-            sodium_mg: Number(finalSodiumMg || 0),
-            sat_fat_g: Number(getNutrient('saturated-fat') || 0),
-            fiber_g: Number(getNutrient('fiber') || 0),
-            protein_g: Number(getNutrient('proteins') || 0)
-        };
+
 
         // ... (data parsing)
 
