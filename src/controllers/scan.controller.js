@@ -22,20 +22,32 @@ exports.analyzeImage = async (req, res) => {
         const prompt = `You are a nutrition data extraction AI. Extract data from this nutrition label image exactly as requested.
         
         CRITICAL: Return ONLY raw JSON. No introductory text. No markdown.
+
+        1. IDENTIFY PRODUCT:
+           - **product_name**: Determine the specific product name (e.g. "Nachos Cheese Chips", "Greek Yogurt"). DO NOT use "Scanned Product".
+           - **brand**: The brand name if visible, or empty string.
+           - **category**: Choose the BEST match: "chips", "soda", "cereal", "yogurt", "bread", "snack", "sauce", "frozen", "candy", "dairy", "meat", "other".
+           - **category_confidence**: Confidence level (0.0 to 1.0).
+
+        2. EXTRACT NUTRIENTS:
+           - **SERVING SIZE**: Look for "Serving Size". Extract GRAMS (e.g. 28). If not found, estimate.
+           - **CALORIES**: Look for "Calories" per serving.
+           - **SUGAR**: "Total Sugars" per serving.
+           - **SODIUM**: "Sodium" per serving.
+           - **SAT FAT**: "Saturated Fat" per serving.
+           - **FIBER**: "Dietary Fiber" per serving.
+           - **PROTEIN**: "Protein" per serving.
         
-        EXTRACT the exact nutrient values and ingredient data:
-        - **SERVING SIZE**: Look for "Serving Size". Extract GRAMS (e.g. 28). If not found, estimate.
-        - **CALORIES**: Look for "Calories" per serving.
-        - **SUGAR**: "Total Sugars" per serving.
-        - **SODIUM**: "Sodium" per serving.
-        - **SAT FAT**: "Saturated Fat" per serving.
-        - **FIBER**: "Dietary Fiber" per serving.
-        - **PROTEIN**: "Protein" per serving.
-        
-        EXTRACT ingredients and allergens:
-        - **Ingredients**: List all. Flag harmful ones (artificial colors, preservatives, hydrogenated oils).
-        - **Allergens**: List declared allergens.
+        3. EXTRACT INGREDIENTS & ALLERGENS:
+           - **Ingredients**: List all. Flag harmful ones.
+           - **Allergens**: List declared allergens.
+
+        JSON OUTPUT FORMAT:
         {
+          "product_name": "string",
+          "brand": "string",
+          "category": "string",
+          "category_confidence": number,
           "extracted_nutrients": {
             "serving_size_g": number,
             "energy_kcal": number,
@@ -231,6 +243,22 @@ exports.analyzeBarcode = async (req, res) => {
         const data = JSON.parse(cleaned);
 
 
+        const realNutrients = {
+            energy_kcal: Number(getNutrient('energy-kcal') || 0),
+            sugar_g: Number(getNutrient('sugars') || 0),
+            sodium_mg: Number(finalSodiumMg || 0),
+            sat_fat_g: Number(getNutrient('saturated-fat') || 0),
+            fiber_g: Number(getNutrient('fiber') || 0),
+            protein_g: Number(getNutrient('proteins') || 0)
+        };
+
+        // ... (data parsing)
+
+        // Ensure data object has correct structure
+        data.product_name = product.product_name || "Scanned Product";
+        data.brand = product.brands || "";
+        // Simple mapping for barcode category (fallback to 'other')
+        data.category = (product.categories_tags || []).some(t => t.includes('beverage')) ? 'soda' : 'other';
         data.extracted_nutrients = realNutrients;
 
         const productForScoring = {

@@ -7,11 +7,26 @@ export async function saveScanToCloud(scanData, user) {
     if (!user) return;
     try {
         const historyRef = collection(db, "users", user.uid, "history");
-        await addDoc(historyRef, {
+
+        // Determine category and placeholder
+        const cat = (scanData.category || "other").toLowerCase();
+        const validCats = ["chips", "soda", "cereal", "yogurt", "bread", "snack", "sauce", "frozen", "candy", "dairy", "meat"];
+        const placeholderName = validCats.includes(cat) ? cat : "generic";
+        const placeholderPath = `/assets/placeholders/${placeholderName}.svg`;
+
+        const docData = {
             ...scanData,
+            productName: scanData.product_name || "Scanned Product",
+            brand: scanData.brand || "",
+            category: cat,
+            category_confidence: scanData.category_confidence || 0,
+            image_url: placeholderPath,
+            image_status: "placeholder",
             timestamp: serverTimestamp()
-        });
-        console.log("Scan saved to cloud!");
+        };
+
+        await addDoc(historyRef, docData);
+        console.log("Scan saved to cloud with metadata:", docData.productName);
 
         // Update Streak
         const newStreak = await updateStreak(user);

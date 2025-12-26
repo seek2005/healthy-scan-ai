@@ -46,19 +46,19 @@ export function renderHistory(containerId) {
 
     container.innerHTML = history.map(item => {
         // Safe access to data properties
-        const scannedName = item.productName || "Unknown Product";
-        const scannedBrand = item.data.Brand || "Scanned Item"; // Brand logic might vary based on parsing
-        // Since we don't save scanned brand explicitly in top level, try to find it or default
-        const scannedScore = item.data.score || "Unknown"; // We didn't save score explicitly in item root properly in prev iteration, let's check item.score or item.data.score
+        // Prioritize stored productName, fallback to data.product_name, then summary match, then "Unknown"
+        const scannedName = item.productName || item.data?.product_name || (item.summary?.match(/\*\*(.*?)\*\*/) ? item.summary.match(/\*\*(.*?)\*\*/)[1] : "Unknown Product");
+        const scannedBrand = item.brand || item.data?.brand || "Scanned Item";
+        const category = item.category || "generic";
+
+        // Image Logic: Use stored URL (placeholder) or generate default placeholder path
+        const scannedImg = item.image_url || `/assets/placeholders/${["chips", "soda", "cereal", "yogurt"].includes(category) ? category : 'generic'}.svg`;
 
         // Alternative Data
-        const alt = item.data.alternative || {};
+        const alt = item.data?.alternative || {};
         const altName = alt.name || "No Alternative Found";
         const altBrand = alt.brand || "";
         const altScore = alt.score || "Excellent";
-
-        // Generate Images via Pollinations
-        const scannedImg = `https://image.pollinations.ai/prompt/${encodeURIComponent(scannedName + " product packaging white background")}?width=200&height=200&nologo=true`;
         const altImg = `https://image.pollinations.ai/prompt/${encodeURIComponent(altName + " " + altBrand + " product packaging white background")}?width=200&height=200&nologo=true`;
 
         return `
