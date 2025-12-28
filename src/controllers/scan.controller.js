@@ -41,7 +41,7 @@ exports.analyzeImage = async (req, res) => {
         3. EXTRACT INGREDIENTS & ALLERGENS:
            - **Ingredients**: List all. Flag harmful ones.
            - **Allergens**: List declared allergens.
-           - **Additives**: Flag as is_harmful: true if matches: monosodium glutamate (MSG), disodium inosinate, disodium guanylate, Yellow 5, Yellow 6, Red 40, artificial flavourings, natural & artificial flavor.
+           - **Additives**: Flag as is_harmful: true if matches: monosodium glutamate (MSG), disodium inosinate, disodium guanylate, Yellow 5, Yellow 6, Red 40, artificial flavour, natural & artificial flavor.
 
         JSON OUTPUT FORMAT:
         {
@@ -218,6 +218,7 @@ exports.analyzeBarcode = async (req, res) => {
         EXTRACT ingredients and allergens:
         - **Ingredients**: List all. Flag harmful ones (artificial colors, preservatives, hydrogenated oils).
         - **Allergens**: List declared allergens.
+        - **Additives**: Flag as is_harmful: true if matches: monosodium glutamate (MSG), disodium inosinate, disodium guanylate, Yellow 5, Yellow 6, Red 40, artificial flavour, natural & artificial flavor.
         
         {
           "extracted_nutrients": {
