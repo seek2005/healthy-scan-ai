@@ -292,20 +292,29 @@ exports.analyzeBarcode = async (req, res) => {
         };
         data.name = data.product_name;
 
+        // Regex detection for harmful additives in ingredients text
+        const highRiskAdditives = [];
+        const additivePatterns = [/monosodium glutamate/i, /disodium inosinate/i, /disodium guanylate/i, /yellow\s?5/i, /yellow\s?6/i, /red\s?40/i, /artificial flavour/i, /natural\s+&\s+artificial flavour/i];
+        const ingredientsText = product.ingredients_text || '';
+        additivePatterns.forEach(pattern => {
+            if (pattern.test(ingredientsText)) highRiskAdditives.push({ risk: 'high' });
+        });
+
+        // Merge with AI-detected harmful ingredients and OFF tags
+        const aiAdditives = (data.ingredients_list || []).filter(i => i.is_harmful).map(() => ({ risk: 'high' }));
+        const offAdditives = (product.additives_tags || []).map(t => ({ risk: "high" }));
+
+        const additivesForScoring = [...highRiskAdditives, ...aiAdditives, ...offAdditives];
+
         const productForScoring = {
             name: data.product_name,
             category: data.category,
             nutrients_basis: "per100g",
             serving_size_gml: 100,
             nutrients: data.nutrients,
-            additives: (product.additives_tags || []).map(t => ({ risk: "high" })),
+            additives: additivesForScoring,
             organic: (product.labels_tags || []).some(l => l.includes('organic'))
         };
-        // Merge AI-detected harmful ingredients if available (for barcode scans, mainly relies on OFF tags, but can overlay if AI ran)
-        if (data.ingredients_list) {
-            const aiRisks = data.ingredients_list.filter(i => i.is_harmful).map(_ => ({ risk: "high" }));
-            if (aiRisks.length > 0) productForScoring.additives = [...productForScoring.additives, ...aiRisks];
-        }
 
         const yukaResult = YukaScore.compute(productForScoring);
         data.health_score = yukaResult.overall;
@@ -314,9 +323,9 @@ exports.analyzeBarcode = async (req, res) => {
 
 
         data.portion_analysis = calculatePortionAnalysis(
-            data.extracted_nutrients.sugar_g,
-            data.extracted_nutrients.sodium_mg,
-            data.extracted_nutrients.sat_fat_g
+            data.nutrients.sugars_g,
+            data.nutrients.sodium_mg,
+            data.nutrients.saturated_fat_g
         );
 
 
