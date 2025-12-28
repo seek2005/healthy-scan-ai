@@ -89,6 +89,7 @@ exports.analyzeImage = async (req, res) => {
         data.product_name = data.product_name || "Unknown Product";
         data.brand = data.brand || "";
         data.category = data.category || "other";
+        data.category_confidence = data.category_confidence || 0;
 
 
         let yukaResult = { overall: 0, label: "Unknown", subscores: {} };
@@ -108,12 +109,23 @@ exports.analyzeImage = async (req, res) => {
                 protein_g: (ext.protein_g || 0) * factor
             };
 
+            // Assign standard fields for response
+            data.nutrients = {
+                energy_kcal: scaled.energy_kcal,
+                sugars_g: scaled.sugars_g,
+                sodium_mg: scaled.sodium_mg,
+                saturated_fat_g: scaled.saturated_fat_g,
+                fiber_g: scaled.fiber_g,
+                protein_g: scaled.protein_g
+            };
+            data.name = data.product_name;
+
             const productForScoring = {
                 name: data.product_name,
                 category: data.category,
                 nutrients_basis: "per100g",
                 serving_size_gml: 100,
-                nutrients: scaled,
+                nutrients: data.nutrients,
                 additives: (data.ingredients_list || []).filter(i => i.is_harmful).map(_ => ({ risk: "high" })),
                 organic: false
             };
@@ -268,21 +280,24 @@ exports.analyzeBarcode = async (req, res) => {
         }
         data.category = category;
 
+        // Normalize fields for consistent response
         data.extracted_nutrients = realNutrients;
+        data.nutrients = {
+            energy_kcal: realNutrients.energy_kcal,
+            sugars_g: realNutrients.sugar_g,
+            saturated_fat_g: realNutrients.sat_fat_g,
+            sodium_mg: realNutrients.sodium_mg,
+            fiber_g: realNutrients.fiber_g,
+            protein_g: realNutrients.protein_g
+        };
+        data.name = data.product_name;
 
         const productForScoring = {
             name: data.product_name,
             category: data.category,
             nutrients_basis: "per100g",
             serving_size_gml: 100,
-            nutrients: {
-                energy_kcal: realNutrients.energy_kcal,
-                sugars_g: realNutrients.sugar_g,
-                saturated_fat_g: realNutrients.sat_fat_g,
-                sodium_mg: realNutrients.sodium_mg,
-                fiber_g: realNutrients.fiber_g,
-                protein_g: realNutrients.protein_g
-            },
+            nutrients: data.nutrients,
             additives: (product.additives_tags || []).map(t => ({ risk: "high" })),
             organic: (product.labels_tags || []).some(l => l.includes('organic'))
         };
