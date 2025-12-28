@@ -1,5 +1,15 @@
 import { db } from "./firebase-config.js";
-import { collection, doc, addDoc, getDocs, orderBy, query, serverTimestamp, getDoc, setDoc } from "firebase/firestore";
+import {
+    collection,
+    doc,
+    addDoc,
+    getDocs,
+    orderBy,
+    query,
+    serverTimestamp,
+    getDoc,
+    setDoc
+} from "firebase/firestore";
 import { getHistory, renderHistory } from "./history.js";
 
 // Save a single scan to Cloud Firestore
@@ -10,13 +20,27 @@ export async function saveScanToCloud(scanData, user) {
 
         // Determine category and placeholder
         const cat = (scanData.category || "other").toLowerCase();
-        const validCats = ["chips", "soda", "cereal", "yogurt", "bread", "snack", "sauce", "frozen", "candy", "dairy", "meat"];
+        const validCats = [
+            "chips",
+            "soda",
+            "cereal",
+            "yogurt",
+            "bread",
+            "snack",
+            "sauce",
+            "frozen",
+            "candy",
+            "dairy",
+            "meat"
+        ];
         const placeholderName = validCats.includes(cat) ? cat : "generic";
         const placeholderPath = `/assets/placeholders/${placeholderName}.svg`;
 
         const docData = {
             ...scanData,
-            productName: scanData.product_name || "Scanned Product",
+            // Store a meaningful product name if available; otherwise use Unknown Product
+            productName:
+                scanData.product_name || scanData.productName || "Unknown Product",
             brand: scanData.brand || "",
             category: cat,
             category_confidence: scanData.category_confidence || 0,
@@ -31,13 +55,12 @@ export async function saveScanToCloud(scanData, user) {
         // Update Streak
         const newStreak = await updateStreak(user);
         if (newStreak) {
-            const streakEl = document.getElementById('streakDisplay');
+            const streakEl = document.getElementById("streakDisplay");
             if (streakEl) {
                 streakEl.innerHTML = `🔥 ${newStreak}`;
-                streakEl.classList.remove('hidden');
+                streakEl.classList.remove("hidden");
             }
         }
-
     } catch (e) {
         console.error("Error adding document: ", e);
     }
@@ -57,7 +80,7 @@ export async function syncLocalHistoryToCloud(user) {
     // 1. Get existing cloud history to avoid duplicates (basic check)
     const snapshot = await getDocs(historyRef);
     const cloudScans = [];
-    snapshot.forEach(doc => {
+    snapshot.forEach((doc) => {
         cloudScans.push(doc.data());
     });
 
@@ -77,7 +100,6 @@ export async function syncLocalHistoryToCloud(user) {
     await loadCloudHistory(user);
 }
 
-
 // Load History from Cloud and Update UI
 export async function loadCloudHistory(user) {
     if (!user) return;
@@ -91,7 +113,6 @@ export async function loadCloudHistory(user) {
         querySnapshot.forEach((doc) => {
             const data = doc.data();
             // Convert Firestore Timestamp to readable date if needed, or keep raw
-            // data.timestamp is an object {seconds, nanoseconds}
             if (data.timestamp && data.timestamp.toDate) {
                 data.appTimestamp = data.timestamp.toDate().toLocaleString();
             }
@@ -99,15 +120,13 @@ export async function loadCloudHistory(user) {
         });
 
         // Update Local State (InMemory/LocalStorage) to match Cloud
-        // We override local storage with cloud data to ensure consistency across devices
-        localStorage.setItem('scanHistory', JSON.stringify(cloudHistory));
+        localStorage.setItem("scanHistory", JSON.stringify(cloudHistory));
 
         // Re-render
         renderHistory("history-grid");
 
         // Load Streak too
         await loadStreak(user);
-
     } catch (e) {
         console.error("Error loading cloud history:", e);
     }
@@ -117,7 +136,7 @@ export async function loadCloudHistory(user) {
 export async function updateStreak(user) {
     if (!user) return;
     const streakRef = doc(db, "users", user.uid, "gamification", "streak");
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toISOString().split("T")[0];
 
     try {
         const docSnap = await getDoc(streakRef);
@@ -126,15 +145,12 @@ export async function updateStreak(user) {
         if (docSnap.exists()) {
             const data = docSnap.data();
             const lastDate = data.lastScanDate;
-
             if (lastDate === today) {
                 return data.currentStreak; // Already scanned today, return current
             }
-
             const yesterday = new Date();
             yesterday.setDate(yesterday.getDate() - 1);
-            const yesterdayStr = yesterday.toISOString().split('T')[0];
-
+            const yesterdayStr = yesterday.toISOString().split("T")[0];
             if (lastDate === yesterdayStr) {
                 currentStreak = (data.currentStreak || 0) + 1;
             } else {
@@ -147,10 +163,8 @@ export async function updateStreak(user) {
             lastScanDate: today,
             lastUpdated: serverTimestamp()
         });
-
         console.log(`Streak updated: ${currentStreak} days 🔥`);
         return currentStreak;
-
     } catch (e) {
         console.error("Error updating streak:", e);
     }
@@ -163,10 +177,10 @@ export async function loadStreak(user) {
         const docSnap = await getDoc(streakRef);
         if (docSnap.exists()) {
             const streak = docSnap.data().currentStreak || 0;
-            const streakEl = document.getElementById('streakDisplay');
+            const streakEl = document.getElementById("streakDisplay");
             if (streakEl) {
                 streakEl.innerHTML = `🔥 ${streak}`;
-                streakEl.classList.remove('hidden');
+                streakEl.classList.remove("hidden");
             }
         }
     } catch (e) {
