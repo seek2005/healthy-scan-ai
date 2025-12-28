@@ -41,6 +41,7 @@ exports.analyzeImage = async (req, res) => {
         3. EXTRACT INGREDIENTS & ALLERGENS:
            - **Ingredients**: List all. Flag harmful ones.
            - **Allergens**: List declared allergens.
+           - **Additives**: Flag as is_harmful: true if matches: monosodium glutamate (MSG), disodium inosinate, disodium guanylate, Yellow 5, Yellow 6, Red 40, artificial flavourings, natural & artificial flavor.
 
         JSON OUTPUT FORMAT:
         {
@@ -284,7 +285,11 @@ exports.analyzeBarcode = async (req, res) => {
             additives: (product.additives_tags || []).map(t => ({ risk: "high" })),
             organic: (product.labels_tags || []).some(l => l.includes('organic'))
         };
-        productForScoring.additives = (data.ingredients_list || []).filter(i => i.is_harmful).map(_ => ({ risk: "high" }));
+        // Merge AI-detected harmful ingredients if available (for barcode scans, mainly relies on OFF tags, but can overlay if AI ran)
+        if (data.ingredients_list) {
+            const aiRisks = data.ingredients_list.filter(i => i.is_harmful).map(_ => ({ risk: "high" }));
+            if (aiRisks.length > 0) productForScoring.additives = [...productForScoring.additives, ...aiRisks];
+        }
 
         const yukaResult = YukaScore.compute(productForScoring);
         data.health_score = yukaResult.overall;
