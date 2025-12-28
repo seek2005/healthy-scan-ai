@@ -3,103 +3,103 @@ const { calculatePortionAnalysis } = require('../utils/nutrition.utils');
 const fetch = require('node-fetch');
 const YukaScore = require('../utils/score_yuka.server');
 
+// In-memory cache for barcode lookups
 const resultCache = new Map();
+
+// Helper to determine product category from a list of tags
+function determineCategory(tags) {
+    const knownCats = [
+        'chips', 'soda', 'cereal', 'yogurt', 'bread', 'snack',
+        'sauce', 'frozen', 'candy', 'dairy', 'meat'
+    ];
+    const lowerTags = (tags || []).map(t => t.toLowerCase());
+    let cat = 'other';
+    for (const known of knownCats) {
+        if (lowerTags.some(t => t.includes(known))) {
+            cat = known;
+            break;
+        }
+    }
+    return cat;
+}
 
 exports.analyzeImage = async (req, res) => {
     try {
         const { image, mimeType, userProfile } = req.body;
         if (!image) return res.status(400).json({ error: 'No image provided' });
 
-        const profileContext = userProfile ? `
-        USER PROFILE:
-        - Age Group: ${userProfile.ageGroup || "General"}
-        - Priorities: ${userProfile.dietary ? userProfile.dietary.join(", ") : "None"}
-        CUSTOMIZE OUTPUT: 
-        - Highlight if product conflicts with these priorities (e.g. High Sugar for Diabetic).
-        - If Vegan/Keto is set, explicitly confirm or warn.
-        ` : "";
-
+        // Build the prompt: ask for product name, brand and category plus nutrient values.
         const prompt = `You are a nutrition data extraction AI. Extract data from this nutrition label image exactly as requested.
-        
-        CRITICAL: Return ONLY raw JSON. No introductory text. No markdown.
 
-        1. IDENTIFY PRODUCT:
-           - **product_name**: Determine the specific product name (e.g. "Nachos Cheese Chips", "Greek Yogurt"). DO NOT use "Scanned Product".
-           - **brand**: The brand name if visible, or empty string.
-           - **category**: Choose the BEST match: "chips", "soda", "cereal", "yogurt", "bread", "snack", "sauce", "frozen", "candy", "dairy", "meat", "other".
-           - **category_confidence**: Confidence level (0.0 to 1.0).
+CRITICAL: Return ONLY raw JSON. No introductory text. No markdown.
 
-        2. EXTRACT NUTRIENTS:
-           - **SERVING SIZE**: Look for "Serving Size". Extract GRAMS (e.g. 28). If not found, estimate.
-           - **CALORIES**: Look for "Calories" per serving.
-           - **SUGAR**: "Total Sugars" per serving.
-           - **SODIUM**: "Sodium" per serving.
-           - **SAT FAT**: "Saturated Fat" per serving.
-           - **FIBER**: "Dietary Fiber" per serving.
-           - **PROTEIN**: "Protein" per serving.
-        
-        3. EXTRACT INGREDIENTS & ALLERGENS:
-           - **Ingredients**: List all. Flag harmful ones.
-           - **Allergens**: List declared allergens.
-           - **Additives**: Flag as is_harmful: true if matches: monosodium glutamate (MSG), disodium inosinate, disodium guanylate, Yellow 5, Yellow 6, Red 40, artificial flavour, natural & artificial flavor.
+1. IDENTIFY PRODUCT:
+   - **product_name**: Determine the specific product name (e.g. "Nachos Cheese Chips", "Greek Yogurt"). DO NOT use "Scanned Product". If nothing is legible, return a generic name like "Corn Chips".
+   - **brand**: The brand name if visible, otherwise empty string.
+   - **category**: Choose the BEST match: "chips", "soda", "cereal", "yogurt", "bread", "snack", "sauce", "frozen", "candy", "dairy", "meat", "other".
+   - **category_confidence**: Confidence level (0.0 to 1.0).
 
-        JSON OUTPUT FORMAT:
-        {
-          "product_name": "string",
-          "brand": "string",
-          "category": "string",
-          "category_confidence": number,
-          "extracted_nutrients": {
-            "serving_size_g": number,
-            "energy_kcal": number,
-            "sugar_g": number,
-            "sodium_mg": number,
-            "sat_fat_g": number,
-            "fiber_g": number,
-            "protein_g": number
-          },
-          "ingredients_list": [
-            { "name": "string", "is_harmful": boolean, "description": "string (short)" }
-          ],
-          "allergens": [
-            { "name": "string", "severity": "string", "description": "string" }
-          ]
-        }`;
+2. EXTRACT NUTRIENTS:
+   - **SERVING SIZE**: Look for "Serving Size". Extract grams (e.g. 28). If not found, estimate.
+   - **CALORIES**: "Calories" per serving.
+   - **SUGAR**: "Total Sugars" per serving.
+   - **SODIUM**: "Sodium" per serving.
+   - **SAT FAT**: "Saturated Fat" per serving.
+   - **FIBER**: "Dietary Fiber" per serving.
+   - **PROTEIN**: "Protein" per serving.
+
+3. EXTRACT INGREDIENTS & ALLERGENS:
+   - **Ingredients**: List all ingredients. Mark 'is_harmful = true' for artificial colours (Yellow 5/6, Red 40), flavour enhancers (monosodium glutamate, disodium inosinate, disodium guanylate), and anything labelled "artificial flavour" or "natural & artificial flavour".
+   - **Allergens**: List declared allergens.
+
+JSON OUTPUT FORMAT:
+{
+  "product_name": "string",
+  "brand": "string",
+  "category": "string",
+  "category_confidence": number,
+  "extracted_nutrients": {
+    "serving_size_g": number,
+    "energy_kcal": number,
+    "sugar_g": number,
+    "sodium_mg": number,
+    "sat_fat_g": number,
+    "fiber_g": number,
+    "protein_g": number
+  },
+  "ingredients_list": [ { "name": "string", "is_harmful": boolean, "description": "string" } ],
+  "allergens": [ { "name": "string", "severity": "string", "description": "string" } ]
+}`;
 
         const imageParts = [
             {
                 inlineData: {
                     data: image,
-                    mimeType: mimeType || "image/jpeg"
+                    mimeType: mimeType || 'image/jpeg'
                 }
             }
         ];
 
-
+        // Call Gemini via helper
         const result = await generateContentWithFallback(prompt, imageParts);
         const response = await result.response;
         const text = response.text();
-
         const jsonData = cleanJSON(text);
-        if (!jsonData) throw new Error("Failed to parse AI response");
+        if (!jsonData) throw new Error('Failed to parse AI response');
 
         const data = JSON.parse(jsonData);
+        // Fallback defaults if fields missing
+        data.product_name = data.product_name || 'Unknown Product';
+        data.brand = data.brand || '';
+        data.category = data.category || 'other';
 
-        // Ensure valid product info
-        data.product_name = data.product_name || "Unknown Product";
-        data.brand = data.brand || "";
-        data.category = data.category || "other";
-        data.category_confidence = data.category_confidence || 0;
-
-
-        let yukaResult = { overall: 0, label: "Unknown", subscores: {} };
+        let yukaResult = { overall: 0, label: 'Unknown', subscores: {} };
 
         if (data.extracted_nutrients) {
             const ext = data.extracted_nutrients;
             const serving = ext.serving_size_g || 100;
-            const factor = serving > 0 ? (100 / serving) : 1;
-
-
+            const factor = serving > 0 ? 100 / serving : 1;
+            // Scale nutrients to per 100g
             const scaled = {
                 energy_kcal: (ext.energy_kcal || 0) * factor,
                 sugars_g: (ext.sugar_g || 0) * factor,
@@ -108,46 +108,30 @@ exports.analyzeImage = async (req, res) => {
                 fiber_g: (ext.fiber_g || 0) * factor,
                 protein_g: (ext.protein_g || 0) * factor
             };
-
-            // Assign standard fields for response
-            data.nutrients = {
-                energy_kcal: scaled.energy_kcal,
-                sugars_g: scaled.sugars_g,
-                sodium_mg: scaled.sodium_mg,
-                saturated_fat_g: scaled.saturated_fat_g,
-                fiber_g: scaled.fiber_g,
-                protein_g: scaled.protein_g
-            };
-            data.name = data.product_name;
-
+            // Create product object for Yuka scoring
             const productForScoring = {
                 name: data.product_name,
                 category: data.category,
-                nutrients_basis: "per100g",
+                nutrients_basis: 'per100g',
                 serving_size_gml: 100,
-                nutrients: data.nutrients,
-                additives: (data.ingredients_list || []).filter(i => i.is_harmful).map(_ => ({ risk: "high" })),
+                nutrients: scaled,
+                additives: (data.ingredients_list || []).filter(i => i.is_harmful).map(_ => ({ risk: 'high' })),
                 organic: false
             };
-
+            // Compute score via Yuka
             yukaResult = YukaScore.compute(productForScoring);
-
-
             data.health_score = yukaResult.overall;
             data.score_label = yukaResult.label;
             data.yuka_breakdown = yukaResult;
             data.nutrients_100g = scaled;
-
-
             data.portion_analysis = calculatePortionAnalysis(
-                data.nutrients_100g.sugars_g,
-                data.nutrients_100g.sodium_mg,
-                data.nutrients_100g.saturated_fat_g
+                scaled.sugars_g,
+                scaled.sodium_mg,
+                scaled.saturated_fat_g
             );
         }
-
+        // Return full data including product_name, brand, category
         res.json(data);
-
     } catch (error) {
         console.error('Image Analysis Error:', error);
         res.status(500).json({ error: error.message });
@@ -159,44 +143,32 @@ exports.analyzeBarcode = async (req, res) => {
         const { barcode, userProfile } = req.body;
         if (!barcode) return res.status(400).json({ error: 'No barcode provided' });
 
-
-        if (resultCache.has(barcode)) {
-            const cacheKey = barcode + (userProfile ? JSON.stringify(userProfile) : "");
-            if (resultCache.has(cacheKey)) {
-                console.log(`⚡ CACHE HIT for ${cacheKey}`);
-                return res.json(resultCache.get(cacheKey));
-            }
+        // Check cache for repeated lookups
+        const cacheKey = barcode + (userProfile ? JSON.stringify(userProfile) : '');
+        if (resultCache.has(cacheKey)) {
+            return res.json(resultCache.get(cacheKey));
         }
 
-        const cacheKey = barcode + (userProfile ? JSON.stringify(userProfile) : "");
-
-        console.log(`fetching data for barcode: ${barcode} `);
-
+        console.log(`fetching data for barcode: ${barcode}`);
         const offResponse = await fetch(`https://world.openfoodfacts.org/api/v2/product/${barcode}.json`);
         const offData = await offResponse.json();
-
         if (offData.status !== 1) {
             return res.status(404).json({ error: 'Product not found in database' });
         }
-
         const product = offData.product;
-
+        // Derive nutrient values; convert sodium to mg
         const getNutrient = (key) => {
             const n = product.nutriments;
             return n[`${key}_100g`] || n[`${key}_serving`] || n[key] || 0;
         };
-
-        const sodiumVal = (product.nutriments.sodium_value || product.nutriments.sodium || 0);
+        const sodiumVal = product.nutriments.sodium_value || product.nutriments.sodium || 0;
         const sodiumUnit = product.nutriments.sodium_unit || 'g';
-
         let finalSodiumMg = sodiumVal;
         if (sodiumUnit === 'g') finalSodiumMg = sodiumVal * 1000;
         if (sodiumUnit === 'mg') finalSodiumMg = sodiumVal;
-
         if (!finalSodiumMg && product.nutriments.sodium_100g) {
             finalSodiumMg = product.nutriments.sodium_100g * 1000;
         }
-
         const realNutrients = {
             energy_kcal: Number(getNutrient('energy-kcal') || 0),
             sugar_g: Number(getNutrient('sugars') || 0),
@@ -205,151 +177,74 @@ exports.analyzeBarcode = async (req, res) => {
             fiber_g: Number(getNutrient('fiber') || 0),
             protein_g: Number(getNutrient('proteins') || 0)
         };
-
-        const profileContext = userProfile ? `
-        USER PROFILE:
-        - Age Group: ${userProfile.ageGroup || "General"}
-        - Priorities: ${userProfile.dietary ? userProfile.dietary.join(", ") : "None"}
-        CUSTOMIZE OUTPUT: 
-        - Highlight if product conflicts with these priorities.
-        ` : "";
-
-        const prompt = `You are a nutrition data extraction AI. Extract data from this nutrition label image exactly as requested.
-        
-        CRITICAL: Return ONLY raw JSON. No introductory text. No markdown.
-        
-        EXTRACT the exact nutrient values and ingredient data:
-        - **SERVING SIZE**: Look for "Serving Size". Extract GRAMS (e.g. 28). If not found, estimate.
-        - **CALORIES**: Look for "Calories" per serving.
-        - **SUGAR**: "Total Sugars" per serving.
-        - **SODIUM**: "Sodium" per serving.
-        - **SAT FAT**: "Saturated Fat" per serving.
-        - **FIBER**: "Dietary Fiber" per serving.
-        - **PROTEIN**: "Protein" per serving.
-        
-        EXTRACT ingredients and allergens:
-        - **Ingredients**: List all. Flag harmful ones (artificial colors, preservatives, hydrogenated oils).
-        - **Allergens**: List declared allergens.
-        - **Additives**: Flag as is_harmful: true if matches: monosodium glutamate (MSG), disodium inosinate, disodium guanylate, Yellow 5, Yellow 6, Red 40, artificial flavour, natural & artificial flavor.
-        
-        {
-          "extracted_nutrients": {
-            "serving_size_g": number,
-            "energy_kcal": number,
-            "sugar_g": number,
-            "sodium_mg": number,
-            "sat_fat_g": number,
-            "fiber_g": number,
-            "protein_g": number
-          },
-          "ingredients_list": [
-            { "name": "string", "is_harmful": boolean, "description": "string (short)" }
-          ],
-          "allergens": [
-            { "name": "string", "severity": "string", "description": "string" }
-          ]
-        }`;
-
-
-        const result = await generateContentWithFallback(prompt, []);
-        const response = await result.response;
-        const text = response.text();
-
-
-
-        const cleaned = cleanJSON(text);
-        if (!cleaned) throw new Error("Failed to parse JSON from AI response");
-
-        const data = JSON.parse(cleaned);
-
-
-
-
-        // ... (data parsing)
-
-        // Ensure data object has correct structure
-        data.product_name = product.product_name || "Unknown Product";
-        data.brand = product.brands || "";
-
-        // Determine category based on tags; match any of the known categories.
-        const tags = (product.categories_tags || []).map(t => t.toLowerCase());
-        const knownCats = ["chips", "soda", "cereal", "yogurt", "bread", "snack", "sauce", "frozen", "candy", "dairy", "meat"];
-        let category = "other";
-        for (const cat of knownCats) {
-            if (tags.some(tag => tag.includes(cat))) { category = cat; break; }
-        }
-        data.category = category;
-
-        // Normalize fields for consistent response
-        data.extracted_nutrients = realNutrients;
+        // Build data object
+        const data = {};
+        // Set product fields with fallbacks
+        data.product_name = product.product_name || 'Unknown Product';
+        data.brand = product.brands || '';
+        data.category = determineCategory(product.categories_tags || []);
+        // Store nutrients on data so the frontend can render the AI Product Analysis card
         data.nutrients = {
             energy_kcal: realNutrients.energy_kcal,
             sugars_g: realNutrients.sugar_g,
-            saturated_fat_g: realNutrients.sat_fat_g,
             sodium_mg: realNutrients.sodium_mg,
+            saturated_fat_g: realNutrients.sat_fat_g,
             fiber_g: realNutrients.fiber_g,
             protein_g: realNutrients.protein_g
         };
+        data.extracted_nutrients = realNutrients;
+        // Use the product name for UI consistency
         data.name = data.product_name;
 
-        // Regex detection for harmful additives in ingredients text
-        const highRiskAdditives = [];
-        const additivePatterns = [/monosodium glutamate/i, /disodium inosinate/i, /disodium guanylate/i, /yellow\s?5/i, /yellow\s?6/i, /red\s?40/i, /artificial flavour/i, /natural\s+&\s+artificial flavour/i];
+        // Build an additives array combining OpenFoodFacts tags and harmful additives detected in the ingredients text
+        let additivesArray = (product.additives_tags || []).map(() => ({ risk: 'high' }));
+        // Detect harmful additives in ingredients text (e.g. MSG, disodium inosinate, disodium guanylate, artificial colours/flavours)
+        const harmfulPatterns = [
+            /monosodium\s+glutamate/i,
+            /disodium\s+inosinate/i,
+            /disodium\s+guanylate/i,
+            /yellow\s*5/i,
+            /yellow\s*6/i,
+            /red\s*40/i,
+            /artificial\s+flavour/i,
+            /natural\s*&\s*artificial\s+flavour/i
+        ];
         const ingredientsText = product.ingredients_text || '';
-        additivePatterns.forEach(pattern => {
-            if (pattern.test(ingredientsText)) highRiskAdditives.push({ risk: 'high' });
+        harmfulPatterns.forEach((pattern) => {
+            if (pattern.test(ingredientsText)) {
+                additivesArray.push({ risk: 'high' });
+            }
         });
+        // If the AI returned ingredients_list with harmful flags, include them too
+        const aiHarmful = (data.ingredients_list || []).filter((i) => i.is_harmful).map(() => ({ risk: 'high' }));
+        additivesArray = additivesArray.concat(aiHarmful);
 
-        // Merge with AI-detected harmful ingredients and OFF tags
-        const aiAdditives = (data.ingredients_list || []).filter(i => i.is_harmful).map(() => ({ risk: 'high' }));
-        const offAdditives = (product.additives_tags || []).map(t => ({ risk: "high" }));
-
-        const additivesForScoring = [...highRiskAdditives, ...aiAdditives, ...offAdditives];
-
+        // Compose product for scoring using the scaled nutrients and combined additives
         const productForScoring = {
             name: data.product_name,
             category: data.category,
-            nutrients_basis: "per100g",
+            nutrients_basis: 'per100g',
             serving_size_gml: 100,
             nutrients: data.nutrients,
-            additives: additivesForScoring,
-            organic: (product.labels_tags || []).some(l => l.includes('organic'))
+            additives: additivesArray,
+            organic: (product.labels_tags || []).some((l) => l.toLowerCase().includes('organic'))
         };
-
+        // Compute Yuka score
         const yukaResult = YukaScore.compute(productForScoring);
         data.health_score = yukaResult.overall;
         data.score_label = yukaResult.label;
         data.yuka_breakdown = yukaResult;
-
-
+        // Portion analysis uses scaled nutrients
         data.portion_analysis = calculatePortionAnalysis(
             data.nutrients.sugars_g,
             data.nutrients.sodium_mg,
             data.nutrients.saturated_fat_g
         );
-
-
+        // Cache and return
         resultCache.set(cacheKey, data);
         res.json(data);
-
     } catch (error) {
         console.error('Barcode Analysis Error:', error);
-        res.status(500).json({ error: error.message });
-    }
-};
-
-exports.debugModels = async (req, res) => {
-    const fetch = require('node-fetch');
-    const { key } = require('../services/gemini.service');
-
-    try {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
-        const data = await response.json();
-        res.json({
-            keySuffix: key ? key.slice(-4) : 'NONE',
-            apiResponse: data
-        });
-    } catch (error) {
         res.status(500).json({ error: error.message });
     }
 };
