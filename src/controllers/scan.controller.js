@@ -84,6 +84,11 @@ exports.analyzeImage = async (req, res) => {
 
         const data = JSON.parse(jsonData);
 
+        // Ensure valid product info
+        data.product_name = data.product_name || "Unknown Product";
+        data.brand = data.brand || "";
+        data.category = data.category || "other";
+
 
         let yukaResult = { overall: 0, label: "Unknown", subscores: {} };
 
@@ -103,7 +108,8 @@ exports.analyzeImage = async (req, res) => {
             };
 
             const productForScoring = {
-                name: "Scanned Product",
+                name: data.product_name,
+                category: data.category,
                 nutrients_basis: "per100g",
                 serving_size_gml: 100,
                 nutrients: scaled,
@@ -248,15 +254,23 @@ exports.analyzeBarcode = async (req, res) => {
         // ... (data parsing)
 
         // Ensure data object has correct structure
-        data.product_name = product.product_name || "Scanned Product";
+        data.product_name = product.product_name || "Unknown Product";
         data.brand = product.brands || "";
-        // Simple mapping for barcode category (fallback to 'other')
-        data.category = (product.categories_tags || []).some(t => t.includes('beverage')) ? 'soda' : 'other';
+
+        // Determine category based on tags; match any of the known categories.
+        const tags = (product.categories_tags || []).map(t => t.toLowerCase());
+        const knownCats = ["chips", "soda", "cereal", "yogurt", "bread", "snack", "sauce", "frozen", "candy", "dairy", "meat"];
+        let category = "other";
+        for (const cat of knownCats) {
+            if (tags.some(tag => tag.includes(cat))) { category = cat; break; }
+        }
+        data.category = category;
+
         data.extracted_nutrients = realNutrients;
 
         const productForScoring = {
-            name: product.product_name || "Scanned Product",
-            category: (product.categories_tags || []).join(' '),
+            name: data.product_name,
+            category: data.category,
             nutrients_basis: "per100g",
             serving_size_gml: 100,
             nutrients: {
