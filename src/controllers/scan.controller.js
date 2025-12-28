@@ -23,6 +23,25 @@ function determineCategory(tags) {
     return cat;
 }
 
+// Regex patterns for harmful additives
+const HARMFUL_PATTERNS = [
+    /monosodium\s+glutamate/i, /msg\b/i, /e621/i,
+    /disodium\s+inosinate/i, /e631/i,
+    /disodium\s+guanylate/i, /e627/i,
+    /yellow\s*5/i, /tartrazine/i, /e102/i,
+    /yellow\s*6/i, /sunset\s*yellow/i, /e110/i,
+    /red\s*40/i, /allura\s*red/i, /e129/i,
+    /blue\s*1/i, /brilliant\s*blue/i, /e133/i,
+    /artificial\s+flavou?r/i,
+    /natural\s*&\s*artificial\s+flavou?r/i,
+    /hydrogenated\s+oil/i,
+    /high\s+fructose\s+corn\s+syrup/i
+];
+
+function detectHarmfulIngredients(text) {
+    return HARMFUL_PATTERNS.some(p => p.test(text));
+}
+
 exports.analyzeImage = async (req, res) => {
     try {
         const { image, mimeType, userProfile } = req.body;
@@ -109,6 +128,16 @@ JSON OUTPUT FORMAT:
                 protein_g: (ext.protein_g || 0) * factor
             };
             // Create product object for Yuka scoring
+
+            // Post-process ingredients to ensure harmful ones are caught even if AI misses them
+            if (data.ingredients_list) {
+                data.ingredients_list.forEach(ing => {
+                    if (detectHarmfulIngredients(ing.name)) {
+                        ing.is_harmful = true; // Force flag
+                    }
+                });
+            }
+
             const productForScoring = {
                 name: data.product_name,
                 category: data.category,
@@ -197,27 +226,29 @@ exports.analyzeBarcode = async (req, res) => {
         data.name = data.product_name;
 
         // Build an additives array combining OpenFoodFacts tags and harmful additives detected in the ingredients text
-        let additivesArray = (product.additives_tags || []).map(() => ({ risk: 'high' }));
-        // Detect harmful additives in ingredients text (e.g. MSG, disodium inosinate, disodium guanylate, artificial colours/flavours)
-        const harmfulPatterns = [
-            /monosodium\s+glutamate/i,
-            /disodium\s+inosinate/i,
-            /disodium\s+guanylate/i,
-            /yellow\s*5/i,
-            /yellow\s*6/i,
-            /red\s*40/i,
-            /artificial\s+flavour/i,
-            /natural\s*&\s*artificial\s+flavour/i
-        ];
+        let additivesArray = [];
+
+        // 1. Check strict additives tags from OFF (looking for known bad codes)
+        const knownBadHtmlCodes = ['e621', 'e631', 'e627', 'e102', 'e110', 'e129', 'e133'];
+        (product.additives_tags || []).forEach(tag => {
+            if (knownBadHtmlCodes.some(code => tag.includes(code))) {
+                additivesArray.push({ risk: 'high' });
+            }
+        });
+
+        // 2. Regex scan on ingredients text
         const ingredientsText = product.ingredients_text || '';
-        harmfulPatterns.forEach((pattern) => {
+        HARMFUL_PATTERNS.forEach((pattern) => {
             if (pattern.test(ingredientsText)) {
                 additivesArray.push({ risk: 'high' });
             }
         });
-        // If the AI returned ingredients_list with harmful flags, include them too
-        const aiHarmful = (data.ingredients_list || []).filter((i) => i.is_harmful).map(() => ({ risk: 'high' }));
-        additivesArray = additivesArray.concat(aiHarmful);
+
+        // 3. Fallback: If OpenAI/Gemini was used for barcode logic previously (not here but kept for safety)
+        if (data.ingredients_list) {
+            const aiHarmful = data.ingredients_list.filter(i => i.is_harmful || detectHarmfulIngredients(i.name)).map(() => ({ risk: 'high' }));
+            additivesArray = additivesArray.concat(aiHarmful);
+        }
 
         // Compose product for scoring using the scaled nutrients and combined additives
         const productForScoring = {
