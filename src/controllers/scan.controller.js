@@ -248,3 +248,19 @@ exports.analyzeBarcode = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
+
+exports.debugModels = async (req, res) => {
+    const fetch = require('node-fetch');
+    const { key } = require('../services/gemini.service');
+
+    try {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
+        const data = await response.json();
+        res.json({
+            keySuffix: key ? key.slice(-4) : 'NONE',
+            apiResponse: data
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
