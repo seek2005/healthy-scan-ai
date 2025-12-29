@@ -153,158 +153,162 @@ export function displayResults(data) {
 
     const summaryContainer = document.getElementById('productAnalysisContainer');
     if (summaryContainer) {
-        summaryContainer.classList.remove('hidden');
-        if (data.summary || data.nutrients) {
-            const n = data.nutrients || {};
-            const ext = data.extracted_nutrients || {};
+        // FIX: Broaden visibility to ensure Score/Analysis shows even if Summary is missing
+        const hasData = (data.health_score !== undefined) || data.yuka_breakdown || data.nutrients || (data.extracted_nutrients && Object.keys(data.extracted_nutrients).length > 0);
 
-            let aiFactor = 1;
-            if (ext.serving_size_g && ext.serving_size_g > 0) {
-                aiFactor = 100 / ext.serving_size_g;
-            }
+        if (hasData) {
+            summaryContainer.classList.remove('hidden');
+            if (data.summary || data.nutrients || data.extracted_nutrients) { // Keep internal logic safe
+                const n = data.nutrients || {};
+                const ext = data.extracted_nutrients || {};
 
-            // 1. Determine Nutrients Basis (Prioritize per100g > FastBarcode > AI Extracted)
-            let mappedNutrients = {};
-            if (data.nutrients_100g) {
-                // Backend provided per-100g (Best)
-                mappedNutrients = {
-                    energy_kcal: data.nutrients_100g.energy_kcal || 0,
-                    sugars_g: data.nutrients_100g.sugars_g || 0,
-                    saturated_fat_g: data.nutrients_100g.saturated_fat_g || 0,
-                    sodium_mg: data.nutrients_100g.sodium_mg || 0,
-                    fiber_g: data.nutrients_100g.fiber_g || 0,
-                    protein_g: data.nutrients_100g.protein_g || 0
-                };
-            } else {
-                // Fallback: Use FastBarcode raw or AI extracted (scaled)
-                mappedNutrients = {
-                    energy_kcal: n.energy_kcal ?? (ext.energy_kcal ? ext.energy_kcal * aiFactor : 0),
-                    sugars_g: n.sugars_g ?? (ext.sugar_g ? ext.sugar_g * aiFactor : 0),
-                    saturated_fat_g: n.saturated_fat_g ?? (ext.sat_fat_g ? ext.sat_fat_g * aiFactor : 0),
-                    sodium_mg: n.sodium_mg ?? (ext.sodium_mg ? ext.sodium_mg * aiFactor : 0),
-                    fiber_g: n.fiber_g ?? (ext.fiber_g ? ext.fiber_g * aiFactor : 0),
-                    protein_g: n.protein_g ?? (ext.protein_g ? ext.protein_g * aiFactor : 0)
-                };
-            }
+                let aiFactor = 1;
+                if (ext.serving_size_g && ext.serving_size_g > 0) {
+                    aiFactor = 100 / ext.serving_size_g;
+                }
 
-            // 2. Build Yuka Product Helper
-            // FIX: Additives empty array truthiness bug
-            const explicitAdditives = (data.additives && data.additives.length > 0) ? data.additives : null;
-            const derivedAdditives = explicitAdditives || (data.ingredients_list || [])
-                .filter(i => i.is_harmful)
-                .map(i => ({ risk: "high", name: i.name }));
+                // 1. Determine Nutrients Basis (Prioritize per100g > FastBarcode > AI Extracted)
+                let mappedNutrients = {};
+                if (data.nutrients_100g) {
+                    // Backend provided per-100g (Best)
+                    mappedNutrients = {
+                        energy_kcal: data.nutrients_100g.energy_kcal || 0,
+                        sugars_g: data.nutrients_100g.sugars_g || 0,
+                        saturated_fat_g: data.nutrients_100g.saturated_fat_g || 0,
+                        sodium_mg: data.nutrients_100g.sodium_mg || 0,
+                        fiber_g: data.nutrients_100g.fiber_g || 0,
+                        protein_g: data.nutrients_100g.protein_g || 0
+                    };
+                } else {
+                    // Fallback: Use FastBarcode raw or AI extracted (scaled)
+                    mappedNutrients = {
+                        energy_kcal: n.energy_kcal ?? (ext.energy_kcal ? ext.energy_kcal * aiFactor : 0),
+                        sugars_g: n.sugars_g ?? (ext.sugar_g ? ext.sugar_g * aiFactor : 0),
+                        saturated_fat_g: n.saturated_fat_g ?? (ext.sat_fat_g ? ext.sat_fat_g * aiFactor : 0),
+                        sodium_mg: n.sodium_mg ?? (ext.sodium_mg ? ext.sodium_mg * aiFactor : 0),
+                        fiber_g: n.fiber_g ?? (ext.fiber_g ? ext.fiber_g * aiFactor : 0),
+                        protein_g: n.protein_g ?? (ext.protein_g ? ext.protein_g * aiFactor : 0)
+                    };
+                }
 
-            const yukaProduct = {
-                name: data.name || "Product",
-                category: data.category || "foods",
-                nutrients_basis: "per100g",
-                serving_size_gml: 100, // Normalized above
-                nutrients: mappedNutrients,
-                additives: derivedAdditives,
-                organic: data.organic !== undefined ? data.organic : (data.suitability_tags || []).includes("Organic")
-            };
+                // 2. Build Yuka Product Helper
+                // FIX: Additives empty array truthiness bug
+                const explicitAdditives = (data.additives && data.additives.length > 0) ? data.additives : null;
+                const derivedAdditives = explicitAdditives || (data.ingredients_list || [])
+                    .filter(i => i.is_harmful)
+                    .map(i => ({ risk: "high", name: i.name }));
 
-            // ... (Portion Analysis Logic skipped for brevity, keeping existing if possible or re-adding it? I must replace contiguous block)
-            // Re-adding Portion Analysis Logic to be safe
-            if (!data.portion_analysis && yukaProduct.nutrients) {
-                const s = yukaProduct.nutrients.sugars_g || 0;
-                const sod = yukaProduct.nutrients.sodium_mg || 0;
-                const f = yukaProduct.nutrients.saturated_fat_g || 0;
-
-                const getRec = (val, limit) => {
-                    const pct = (val / limit) * 100;
-                    return pct > 40 ? "High" : pct > 20 ? "Medium" : "Low";
+                const yukaProduct = {
+                    name: data.name || "Product",
+                    category: data.category || "foods",
+                    nutrients_basis: "per100g",
+                    serving_size_gml: 100, // Normalized above
+                    nutrients: mappedNutrients,
+                    additives: derivedAdditives,
+                    organic: data.organic !== undefined ? data.organic : (data.suitability_tags || []).includes("Organic")
                 };
 
-                data.portion_analysis = {
-                    "Children (4-8)": {
-                        sugar: getRec(s, 25), sodium: getRec(sod, 1200), saturated_fat: getRec(f, 10)
-                    },
-                    "Adults (19-50)": {
-                        sugar: getRec(s, 50), sodium: getRec(sod, 2300), saturated_fat: getRec(f, 20)
-                    },
-                    "Seniors (51+)": {
-                        sugar: getRec(s, 30), sodium: getRec(sod, 1500), saturated_fat: getRec(f, 15)
-                    }
-                };
-            }
+                // ... (Portion Analysis Logic skipped for brevity, keeping existing if possible or re-adding it? I must replace contiguous block)
+                // Re-adding Portion Analysis Logic to be safe
+                if (!data.portion_analysis && yukaProduct.nutrients) {
+                    const s = yukaProduct.nutrients.sugars_g || 0;
+                    const sod = yukaProduct.nutrients.sodium_mg || 0;
+                    const f = yukaProduct.nutrients.saturated_fat_g || 0;
 
-            // 3. POLYFILL UPF & INGREDIENTS (Keep existing logic)
-            const UPF_KEYWORDS = [/maltodextrin/i, /corn syrup/i, /high fructose/i, /dextrose/i, /hydrogenated/i, /artificial/i, /color/i, /lake/i, /glutamate/i, /disodium/i, /benzoate/i, /yellow 5/i, /yellow 6/i, /red 40/i, /blue 1/i];
+                    const getRec = (val, limit) => {
+                        const pct = (val / limit) * 100;
+                        return pct > 40 ? "High" : pct > 20 ? "Medium" : "Low";
+                    };
 
-            if ((!data.ingredients_list || data.ingredients_list.length === 0) && data.ingredients_text) {
-                data.ingredients_list = data.ingredients_text
-                    .split(/,(?![^()]*\))/)
-                    .map(s => s.trim())
-                    .filter(s => s.length > 1)
-                    .slice(0, 20)
-                    .map(name => {
-                        const isBad = UPF_KEYWORDS.some(r => r.test(name));
-                        return {
-                            name: name,
-                            is_harmful: isBad,
-                            description: isBad ? "Associated with ultra-processed foods." : "Common ingredient."
-                        };
-                    });
-            }
+                    data.portion_analysis = {
+                        "Children (4-8)": {
+                            sugar: getRec(s, 25), sodium: getRec(sod, 1200), saturated_fat: getRec(f, 10)
+                        },
+                        "Adults (19-50)": {
+                            sugar: getRec(s, 50), sodium: getRec(sod, 2300), saturated_fat: getRec(f, 20)
+                        },
+                        "Seniors (51+)": {
+                            sugar: getRec(s, 30), sodium: getRec(sod, 1500), saturated_fat: getRec(f, 15)
+                        }
+                    };
+                }
 
-            // 4. COMPUTE SCORE (Prioritize Backend Trace > Local Compute)
-            // IGNORE data.health_score for display to prevent AI hallucinations
-            const breakdown = data.yuka_breakdown || window.YukaScore.compute(yukaProduct);
-            // FIX: Handle 0 value correctly (don't use || operator on numbers)
-            const score = (breakdown && breakdown.overall !== undefined)
-                ? breakdown.overall
-                : (data.health_score !== undefined ? data.health_score : 0);
+                // 3. POLYFILL UPF & INGREDIENTS (Keep existing logic)
+                const UPF_KEYWORDS = [/maltodextrin/i, /corn syrup/i, /high fructose/i, /dextrose/i, /hydrogenated/i, /artificial/i, /color/i, /lake/i, /glutamate/i, /disodium/i, /benzoate/i, /yellow 5/i, /yellow 6/i, /red 40/i, /blue 1/i];
 
-            const scoreLabel = (breakdown && breakdown.label)
-                ? breakdown.label
-                : (data.score_label || (score >= 75 ? "Excellent" : score >= 50 ? "Good" : score >= 25 ? "Mediocre" : "Bad"));
+                if ((!data.ingredients_list || data.ingredients_list.length === 0) && data.ingredients_text) {
+                    data.ingredients_list = data.ingredients_text
+                        .split(/,(?![^()]*\))/)
+                        .map(s => s.trim())
+                        .filter(s => s.length > 1)
+                        .slice(0, 20)
+                        .map(name => {
+                            const isBad = UPF_KEYWORDS.some(r => r.test(name));
+                            return {
+                                name: name,
+                                is_harmful: isBad,
+                                description: isBad ? "Associated with ultra-processed foods." : "Common ingredient."
+                            };
+                        });
+                }
 
-            // Debug Warning
-            if (data.health_score !== undefined && Math.abs(data.health_score - score) > 10) {
-                console.warn(`[Scoring Mismatch] AI:${data.health_score} vs Calc:${score}. Showing Calc.`, yukaProduct);
-            }
+                // 4. COMPUTE SCORE (Prioritize Backend Trace > Local Compute)
+                // IGNORE data.health_score for display to prevent AI hallucinations
+                const breakdown = data.yuka_breakdown || window.YukaScore.compute(yukaProduct);
+                // FIX: Handle 0 value correctly (don't use || operator on numbers)
+                const score = (breakdown && breakdown.overall !== undefined)
+                    ? breakdown.overall
+                    : (data.health_score !== undefined ? data.health_score : 0);
 
-            if (!data.alternative && score < 50) {
-                const cat = data.category ? data.category.split(',')[0] : "Snack";
-                data.alternative = {
-                    name: `Healthier ${cat} Options`,
-                    brand: "Top Rated",
-                    reason: "This product received a low health score. Consider trying a highly-rated, cleaner alternative.",
-                    score: "Better"
-                };
-            }
+                const scoreLabel = (breakdown && breakdown.label)
+                    ? breakdown.label
+                    : (data.score_label || (score >= 75 ? "Excellent" : score >= 50 ? "Good" : score >= 25 ? "Mediocre" : "Bad"));
 
-            // Map Label to Colors
-            let scoreColor = '#10b981'; // Excellent (Green)
-            let scoreBg = 'bg-emerald-50';
-            let labelColorClass = 'text-emerald-700';
+                // Debug Warning
+                if (data.health_score !== undefined && Math.abs(data.health_score - score) > 10) {
+                    console.warn(`[Scoring Mismatch] AI:${data.health_score} vs Calc:${score}. Showing Calc.`, yukaProduct);
+                }
 
-            if (scoreLabel === 'Good') {
-                scoreColor = '#84cc16'; // Light Green
-                scoreBg = 'bg-lime-50';
-                labelColorClass = 'text-lime-700';
-            } else if (scoreLabel === 'Mediocre') {
-                scoreColor = '#f59e0b'; // Orange
-                scoreBg = 'bg-orange-50';
-                labelColorClass = 'text-orange-700';
-            } else if (scoreLabel === 'Bad') {
-                scoreColor = '#ef4444'; // Red
-                scoreBg = 'bg-red-50';
-                labelColorClass = 'text-red-700';
-            }
+                if (!data.alternative && score < 50) {
+                    const cat = data.category ? data.category.split(',')[0] : "Snack";
+                    data.alternative = {
+                        name: `Healthier ${cat} Options`,
+                        brand: "Top Rated",
+                        reason: "This product received a low health score. Consider trying a highly-rated, cleaner alternative.",
+                        score: "Better"
+                    };
+                }
 
-            const tags = data.suitability_tags || ["General Use"];
-            const tagsHtml = tags.map(tag => {
-                let colorClass = 'bg-emerald-100 text-emerald-800 border-emerald-200';
-                if (tag.toLowerCase().includes('allerg') || tag.toLowerCase().includes('avoid')) colorClass = 'bg-red-100 text-red-800 border-red-200';
-                else if (tag.toLowerCase().includes('low') || tag.toLowerCase().includes('free')) colorClass = 'bg-emerald-100 text-emerald-800 border-emerald-200';
-                else if (tag.toLowerCase().includes('process') || tag.toLowerCase().includes('additiv')) colorClass = 'bg-orange-100 text-orange-800 border-orange-200';
+                // Map Label to Colors
+                let scoreColor = '#10b981'; // Excellent (Green)
+                let scoreBg = 'bg-emerald-50';
+                let labelColorClass = 'text-emerald-700';
 
-                return `<span class="px-3 py-1 rounded-full text-xs font-bold border ${colorClass}">${tag}</span>`;
-            }).join('');
+                if (scoreLabel === 'Good') {
+                    scoreColor = '#84cc16'; // Light Green
+                    scoreBg = 'bg-lime-50';
+                    labelColorClass = 'text-lime-700';
+                } else if (scoreLabel === 'Mediocre') {
+                    scoreColor = '#f59e0b'; // Orange
+                    scoreBg = 'bg-orange-50';
+                    labelColorClass = 'text-orange-700';
+                } else if (scoreLabel === 'Bad') {
+                    scoreColor = '#ef4444'; // Red
+                    scoreBg = 'bg-red-50';
+                    labelColorClass = 'text-red-700';
+                }
 
-            summaryContainer.innerHTML = `
+                const tags = data.suitability_tags || ["General Use"];
+                const tagsHtml = tags.map(tag => {
+                    let colorClass = 'bg-emerald-100 text-emerald-800 border-emerald-200';
+                    if (tag.toLowerCase().includes('allerg') || tag.toLowerCase().includes('avoid')) colorClass = 'bg-red-100 text-red-800 border-red-200';
+                    else if (tag.toLowerCase().includes('low') || tag.toLowerCase().includes('free')) colorClass = 'bg-emerald-100 text-emerald-800 border-emerald-200';
+                    else if (tag.toLowerCase().includes('process') || tag.toLowerCase().includes('additiv')) colorClass = 'bg-orange-100 text-orange-800 border-orange-200';
+
+                    return `<span class="px-3 py-1 rounded-full text-xs font-bold border ${colorClass}">${tag}</span>`;
+                }).join('');
+
+                summaryContainer.innerHTML = `
                 <div class="flex gap-4 mb-8 justify-center animate-fade-in-up">
                     <button onclick="resetUI()" class="flex-1 py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl transition-all flex items-center justify-center gap-2">
                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
@@ -373,23 +377,23 @@ export function displayResults(data) {
                     </div>
                 </div>
             `;
+            }
         }
-    }
 
-    const allergenContainer = document.getElementById('allergenContainer');
-    if (allergenContainer) {
-        allergenContainer.innerHTML = '';
-        allergenContainer.classList.add('hidden');
-        if (data.allergens && data.allergens.length > 0) {
-            allergenContainer.classList.remove('hidden');
-            let allergensHtml = data.allergens.map(a => `
+        const allergenContainer = document.getElementById('allergenContainer');
+        if (allergenContainer) {
+            allergenContainer.innerHTML = '';
+            allergenContainer.classList.add('hidden');
+            if (data.allergens && data.allergens.length > 0) {
+                allergenContainer.classList.remove('hidden');
+                let allergensHtml = data.allergens.map(a => `
                 <div class="bg-red-50 p-4 rounded-xl border border-red-100">
                    <p class="font-bold text-red-900">${a.name}</p>
                    <p class="text-sm text-red-700">${a.description}</p>
                 </div>
             `).join('');
 
-            allergenContainer.innerHTML = `
+                allergenContainer.innerHTML = `
                 <div class="bg-red-50/50 rounded-[1.5rem] p-1 border-2 border-red-100">
                     <div class="bg-red-100/50 p-4 rounded-t-[1.3rem] flex items-center gap-2">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6 text-red-600">
@@ -405,31 +409,31 @@ export function displayResults(data) {
                     </div>
                 </div>
             `;
-        }
-    }
-
-    const tableElement = document.getElementById('portionAnalysisTable');
-    if (tableElement) {
-        const parentCard = tableElement.closest('.glass-panel');
-        if (parentCard) {
-            parentCard.className = 'glass-panel rounded-[1.5rem] p-4 md:p-10 bg-gradient-to-r from-orange-50 to-amber-50 shadow-xl border border-orange-100/50';
-            const headerIcon = parentCard.querySelector('.p-2');
-            if (headerIcon) headerIcon.className = 'p-2 md:p-3 bg-white text-orange-500 rounded-xl shadow-sm';
+            }
         }
 
+        const tableElement = document.getElementById('portionAnalysisTable');
+        if (tableElement) {
+            const parentCard = tableElement.closest('.glass-panel');
+            if (parentCard) {
+                parentCard.className = 'glass-panel rounded-[1.5rem] p-4 md:p-10 bg-gradient-to-r from-orange-50 to-amber-50 shadow-xl border border-orange-100/50';
+                const headerIcon = parentCard.querySelector('.p-2');
+                if (headerIcon) headerIcon.className = 'p-2 md:p-3 bg-white text-orange-500 rounded-xl shadow-sm';
+            }
 
-        const SHORT_STATUS = {
-            "Recommended": "Rec.",
-            "Low": "Low",
-            "Medium": "Med.",
-            "High": "High",
-            "Excessive": "Bad"
-        };
 
-        let rows = '';
-        if (data.portion_analysis) {
-            for (const [group, nutrients] of Object.entries(data.portion_analysis)) {
-                rows += `
+            const SHORT_STATUS = {
+                "Recommended": "Rec.",
+                "Low": "Low",
+                "Medium": "Med.",
+                "High": "High",
+                "Excessive": "Bad"
+            };
+
+            let rows = '';
+            if (data.portion_analysis) {
+                for (const [group, nutrients] of Object.entries(data.portion_analysis)) {
+                    rows += `
     <tr class="group hover:bg-white/50 transition-colors border-b border-orange-100 last:border-0">
                     <td class="py-2 md:py-4 font-bold text-gray-800 capitalize pl-1 text-xs md:text-base w-1/4 break-words">${group.replace('Children', 'Child').replace('Adults', 'Adult').replace('Seniors', 'Senior')}</td>
                     <td class="py-2 md:py-4 text-center w-1/4">
@@ -448,13 +452,12 @@ export function displayResults(data) {
                         </span>
                     </td>
                 </tr>`;
+                }
             }
+            tableElement.innerHTML = rows;
         }
-        tableElement.innerHTML = rows;
-    }
 
-    const ingContainer = document.getElementById('ingredientsContainer');
-    if (ingContainer) {
+        // Ingredients Render
         ingContainer.innerHTML = '';
         const parentCard = ingContainer.closest('.glass-panel');
         if (parentCard) {
@@ -463,7 +466,10 @@ export function displayResults(data) {
             if (headerIcon) headerIcon.className = 'p-2 md:p-3 bg-white text-orange-600 rounded-xl shadow-sm';
         }
 
-        if (data.ingredients_list) {
+        if (!data.ingredients_list || data.ingredients_list.length === 0) {
+            // FIX: Empty State UX
+            ingContainer.innerHTML = `<div class="col-span-full text-center text-gray-400 italic py-4 text-sm">No ingredients detected. Try a clearer photo.</div>`;
+        } else {
             data.ingredients_list.forEach(ing => {
                 const el = document.createElement('div');
                 const isHarmful = ing.is_harmful;
