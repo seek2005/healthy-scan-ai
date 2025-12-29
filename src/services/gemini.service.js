@@ -16,7 +16,14 @@ async function generateContentWithFallback(prompt, imageParts) {
     for (const modelName of MODELS) {
         try {
             console.log(`Trying model: ${modelName}`);
-            const model = genAI.getGenerativeModel({ model: modelName });
+            const model = genAI.getGenerativeModel({
+                model: modelName,
+                generationConfig: {
+                    temperature: 0,
+                    topP: 0.1,
+                    responseMimeType: "application/json"
+                }
+            });
             const result = await model.generateContent([prompt, ...imageParts]);
             return result;
         } catch (error) {

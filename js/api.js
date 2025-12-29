@@ -1,7 +1,11 @@
 export async function analyzeImage(imageBase64, mimeType, userProfile) {
-    const response = await fetch('/api/analyze-image', {
+    const response = await fetch(`/api/analyze-image?t=${Date.now()}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        cache: 'no-store',
+        headers: {
+            'Content-Type': 'application/json',
+            'Pragma': 'no-cache'
+        },
         body: JSON.stringify({ image: imageBase64, mimeType: mimeType, userProfile })
     });
 
@@ -14,9 +18,13 @@ export async function analyzeImage(imageBase64, mimeType, userProfile) {
 }
 
 export async function analyzeBarcode(barcode, userProfile) {
-    const response = await fetch('/api/analyze-barcode', {
+    const response = await fetch(`/api/analyze-barcode?t=${Date.now()}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        cache: 'no-store',
+        headers: {
+            'Content-Type': 'application/json',
+            'Pragma': 'no-cache'
+        },
         body: JSON.stringify({ barcode: barcode, userProfile })
     });
 
