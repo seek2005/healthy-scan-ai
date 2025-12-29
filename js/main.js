@@ -32,6 +32,10 @@ async function handleImageUpload(event) {
         uploadedImageBase64 = await previewImage(file, imagePreviewElement, scanButton);
     }
 }
+// Fix ReferenceError by binding event listener
+if (imageUpload) {
+    imageUpload.addEventListener('change', handleImageUpload);
+}
 
 // Start Image Scan
 async function startScan() {

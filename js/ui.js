@@ -458,40 +458,49 @@ export function displayResults(data) {
         }
 
         // Ingredients Render
-        ingContainer.innerHTML = '';
-        const parentCard = ingContainer.closest('.glass-panel');
-        if (parentCard) {
-            parentCard.className = 'glass-panel rounded-[1.5rem] p-4 md:p-10 bg-gradient-to-r from-orange-50 to-amber-50 shadow-xl border border-orange-100/50';
-            const headerIcon = parentCard.querySelector('.p-2');
-            if (headerIcon) headerIcon.className = 'p-2 md:p-3 bg-white text-orange-600 rounded-xl shadow-sm';
-        }
+        // Fix ReferenceError: Ensure ingContainer is defined
+        const ingContainer = document.getElementById('ingredientsContainer');
 
-        if (!data.ingredients_list || data.ingredients_list.length === 0) {
-            // FIX: Empty State UX
-            ingContainer.innerHTML = `<div class="col-span-full text-center text-gray-400 italic py-4 text-sm">No ingredients detected. Try a clearer photo.</div>`;
+        if (ingContainer) {
+            ingContainer.innerHTML = '';
+
+            // Stylize parent card if found
+            const parentCard = ingContainer.closest('.glass-panel');
+            if (parentCard) {
+                parentCard.className = 'glass-panel rounded-[1.5rem] p-4 md:p-10 bg-gradient-to-r from-orange-50 to-amber-50 shadow-xl border border-orange-100/50';
+                const headerIcon = parentCard.querySelector('.p-2');
+                if (headerIcon) headerIcon.className = 'p-2 md:p-3 bg-white text-orange-600 rounded-xl shadow-sm';
+            }
+
+            if (!data.ingredients_list || data.ingredients_list.length === 0) {
+                // FIX: Empty State UX
+                ingContainer.innerHTML = `<div class="col-span-full text-center text-gray-400 italic py-4 text-sm">No ingredients detected. Try a clearer photo.</div>`;
+            } else {
+                data.ingredients_list.forEach(ing => {
+                    const el = document.createElement('div');
+                    const isHarmful = ing.is_harmful;
+                    el.className = `group relative px-3 py-1 md:px-4 md:py-2 rounded-full text-[10px] md:text-xs font-bold flex items-center gap-1 cursor-help transition-all hover:scale-105 shadow-sm hover:shadow-md ${isHarmful ? 'bg-red-100 text-red-700 border border-red-200' : 'bg-white text-emerald-700 border border-emerald-100'} select-none`;
+
+                    // Correction Tooltip - FIX: Only show if valid content
+                    let tooltipContent = "";
+                    if (ing.description && ing.description.trim().length > 0 && ing.description !== "No description available") {
+                        tooltipContent += `<p class="mb-1">${ing.description}</p>`;
+                    }
+                    if (ing.flags && ing.flags.corrected) {
+                        tooltipContent += `<span class="text-orange-500 text-[10px] uppercase tracking-wide border-t border-orange-200 mt-1 pt-1 block">Original: ${ing.original_name}</span>`;
+                    }
+
+                    let tooltipHtml = "";
+                    if (tooltipContent) {
+                        tooltipHtml = `<div class="tooltip-bubble">${tooltipContent}</div>`;
+                    }
+
+                    el.innerHTML = `${ing.name} ${tooltipHtml}`;
+                    ingContainer.appendChild(el);
+                });
+            }
         } else {
-            data.ingredients_list.forEach(ing => {
-                const el = document.createElement('div');
-                const isHarmful = ing.is_harmful;
-                el.className = `group relative px-3 py-1 md:px-4 md:py-2 rounded-full text-[10px] md:text-xs font-bold flex items-center gap-1 cursor-help transition-all hover:scale-105 shadow-sm hover:shadow-md ${isHarmful ? 'bg-red-100 text-red-700 border border-red-200' : 'bg-white text-emerald-700 border border-emerald-100'} select-none`;
-
-                // Correction Tooltip - FIX: Only show if valid content
-                let tooltipContent = "";
-                if (ing.description && ing.description.trim().length > 0) {
-                    tooltipContent += `<p class="mb-1">${ing.description}</p>`;
-                }
-                if (ing.flags && ing.flags.corrected) {
-                    tooltipContent += `<span class="text-orange-500 text-[10px] uppercase tracking-wide border-t border-orange-200 mt-1 pt-1 block">Original: ${ing.original_name}</span>`;
-                }
-
-                let tooltipHtml = "";
-                if (tooltipContent) {
-                    tooltipHtml = `<div class="tooltip-bubble">${tooltipContent}</div>`;
-                }
-
-                el.innerHTML = `${ing.name} ${tooltipHtml}`;
-                ingContainer.appendChild(el);
-            });
+            console.warn("ingredientsContainer not found in DOM");
         }
     }
 
