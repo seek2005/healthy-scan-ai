@@ -1,13 +1,13 @@
+```javascript
 const HARMFUL_KEYWORDS = require('./harmful_keywords.json');
 
 const OCR_CORRECTIONS = {
     "LAG ACID": "LACTIC ACID",
     "LAC ACID": "LACTIC ACID",
-    "PUM": "", // Mark as Junk
-    "MALTODEXTRIN": "MALTODEXTRIN",
-    "CORN SYRUP SOLIDS": "CORN SYRUP SOLIDS",
+    "MALTODEXTRIN": "MALTODEXTRIN", // No-op but safe
     "VEG OIL": "VEGETABLE OIL",
     "F.D.C": "FD&C"
+    // REMOVED "PUM" logic entirely to prevent hallucination.
 };
 
 const SINGULAR_MAP = {
@@ -18,27 +18,22 @@ const SINGULAR_MAP = {
     "PRESERVATIVES": "PRESERVATIVE"
 };
 
-const JUNK_ALLOWLIST = new Set(["MSG", "BHA", "BHT", "TEA", "OIL", "GUM", "E100", "RED", "DYE", "SOY", "EGG", "FAT", "OAT", "RYE"]);
+const SAFE_SHORT_TOKENS = new Set(["MSG", "BHA", "BHT", "TEA", "OIL", "GUM", "E100", "RED", "DYE", "SOY", "EGG", "FAT", "OAT", "RYE", "CORN", "MILK", "SALT"]);
 
 /**
- * Normalizes an ingredient name: casing, whitespace, OCR corrections, pluralization.
+ * Normalizes an ingredient name: casing, whitespace, safe OCR corrections.
  */
 function normalizeIngredientName(name) {
     if (!name) return "";
     let normalized = String(name).trim().toUpperCase();
+    normalized = normalized.replace(/[.,;:]+$/, ""); // Remove trailing punctuation
 
-    // Remove trailing punctuation
-    normalized = normalized.replace(/[.,;:]+$/, "");
-
-    // Exact OCR Fixes
+    // Exact OCR Fixes (Safe List Only)
     if (OCR_CORRECTIONS[normalized]) return OCR_CORRECTIONS[normalized];
-
-    // Check correction map for substrings if needed (careful)
-    // For now, strict mapping or simple suffix handling
 
     // Normalize Plurals
     if (SINGULAR_MAP[normalized]) return SINGULAR_MAP[normalized];
-
+    
     // "XXX FLAVORS" -> "XXX FLAVOR"
     if (normalized.endsWith(" FLAVORS")) {
         normalized = normalized.replace(/ FLAVORS$/, " FLAVOR");
@@ -48,25 +43,25 @@ function normalizeIngredientName(name) {
 }
 
 /**
- * Detects legitimate junk tokens (short nonsense, non-alpha noise).
+ * Detects junk tokens (short nonsense, non-alpha noise).
  */
 function isLikelyJunk(name) {
     if (!name || name.length < 2) return true;
-
+    
     // Drop short tokens unless allowed
     if (name.length < 4) {
-        if (!JUNK_ALLOWLIST.has(name)) return true;
+        if (!SAFE_SHORT_TOKENS.has(name) && !/^E\d+$/.test(name)) return true;
     }
 
-    // Heuristic: Must have at least one vowel (A E I O U Y)?
-    // "MSG" has no vowels but is allowed.
-    // "PUM" has U. 
-    // "PHP" ?
-    // Let's rely on allowlist for very short words.
+    // Heuristic: Must have at least one vowel?
+    if (!/[AEIOUY]/.test(name) && !SAFE_SHORT_TOKENS.has(name) && !/^E\d+$/.test(name)) return true;
 
     // Check for excessive symbols (OCR noise like "$%#")
     const letters = (name.match(/[A-Z]/g) || []).length;
     if (letters < name.length * 0.5) return true; // Less than 50% letters
+
+    // Specific Junk Blocklist
+    if (name === "PUM") return true;
 
     return false;
 }
@@ -89,21 +84,24 @@ function cleanIngredients(ingredientsList) {
         let isHarmful = (typeof item === 'object' && item.is_harmful) === true;
 
         const normalized = normalizeIngredientName(originalName);
+        const originalNormalized = originalName.trim().toUpperCase();
+        let corrected = normalized !== originalNormalized;
+        let dropReason = null;
 
         // Check validation
         if (!normalized) {
-            dropped.push({ original: originalName, reason: "Empty/Mapped to Empty" });
-            continue;
+            dropReason = "Empty/Mapped to Empty";
+        } else if (isLikelyJunk(normalized)) {
+            dropReason = "Junk token";
         }
 
-        if (isLikelyJunk(normalized)) {
-            dropped.push({ original: originalName, normalized, reason: "Junk token" });
+        if (dropReason) {
+            dropped.push({ original: originalName, normalized, reason: dropReason });
             continue;
         }
 
         // Deduplication
         if (seen.has(normalized)) {
-            // Already present. We might update is_harmful if strictly necessary, but maintaining first order is request.
             continue;
         }
         seen.add(normalized);

@@ -251,11 +251,17 @@ export function displayResults(data) {
             // 4. COMPUTE SCORE (Prioritize Backend Trace > Local Compute)
             // IGNORE data.health_score for display to prevent AI hallucinations
             const breakdown = data.yuka_breakdown || window.YukaScore.compute(yukaProduct);
-            const score = breakdown.overall;
-            const scoreLabel = breakdown.label;
+            // FIX: Handle 0 value correctly (don't use || operator on numbers)
+            const score = (breakdown && breakdown.overall !== undefined)
+                ? breakdown.overall
+                : (data.health_score !== undefined ? data.health_score : 0);
+
+            const scoreLabel = (breakdown && breakdown.label)
+                ? breakdown.label
+                : (data.score_label || (score >= 75 ? "Excellent" : score >= 50 ? "Good" : score >= 25 ? "Mediocre" : "Bad"));
 
             // Debug Warning
-            if (data.health_score && Math.abs(data.health_score - score) > 10) {
+            if (data.health_score !== undefined && Math.abs(data.health_score - score) > 10) {
                 console.warn(`[Scoring Mismatch] AI:${data.health_score} vs Calc:${score}. Showing Calc.`, yukaProduct);
             }
 
@@ -461,20 +467,23 @@ export function displayResults(data) {
             data.ingredients_list.forEach(ing => {
                 const el = document.createElement('div');
                 const isHarmful = ing.is_harmful;
-                el.className = `group relative px-3 py-1 md:px-4 md:py-2 rounded-full text-[10px] md:text-xs font-bold flex items-center gap-1 cursor-help transition-all hover:scale-105 shadow-sm hover:shadow-md ${isHarmful ? 'bg-red-100 text-red-700 border border-red-200' : 'bg-white text-emerald-700 border border-emerald-100'}`;
+                el.className = `group relative px-3 py-1 md:px-4 md:py-2 rounded-full text-[10px] md:text-xs font-bold flex items-center gap-1 cursor-help transition-all hover:scale-105 shadow-sm hover:shadow-md ${isHarmful ? 'bg-red-100 text-red-700 border border-red-200' : 'bg-white text-emerald-700 border border-emerald-100'} select-none`;
 
-                // Correction Tooltip
-                let tooltipContent = ing.description || "No description available";
+                // Correction Tooltip - FIX: Only show if valid content
+                let tooltipContent = "";
+                if (ing.description && ing.description.trim().length > 0) {
+                    tooltipContent += `<p class="mb-1">${ing.description}</p>`;
+                }
                 if (ing.flags && ing.flags.corrected) {
-                    tooltipContent += `<br><span class="text-orange-500 text-[10px] uppercase tracking-wide border-t border-orange-200 mt-1 pt-1 block">Original: ${ing.original_name}</span>`;
+                    tooltipContent += `<span class="text-orange-500 text-[10px] uppercase tracking-wide border-t border-orange-200 mt-1 pt-1 block">Original: ${ing.original_name}</span>`;
                 }
 
-                el.innerHTML = `
-                    ${ing.name}
-                    <div class="tooltip-bubble">
-                        ${tooltipContent}
-                    </div>
-                `;
+                let tooltipHtml = "";
+                if (tooltipContent) {
+                    tooltipHtml = `<div class="tooltip-bubble">${tooltipContent}</div>`;
+                }
+
+                el.innerHTML = `${ing.name} ${tooltipHtml}`;
                 ingContainer.appendChild(el);
             });
         }
