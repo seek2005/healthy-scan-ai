@@ -521,39 +521,18 @@ export function displayResults(data) {
                 debugEl.innerHTML = `<summary>Debug: Raw Text</summary><pre class="whitespace-pre-wrap mt-1">${data.ingredients_text}</pre>`;
                 ingContainer.appendChild(debugEl);
             }
-            const isHarmful = ing.is_harmful;
-            el.className = `group relative px-3 py-1 md:px-4 md:py-2 rounded-full text-[10px] md:text-xs font-bold flex items-center gap-1 cursor-help transition-all hover:scale-105 shadow-sm hover:shadow-md ${isHarmful ? 'bg-red-100 text-red-700 border border-red-200' : 'bg-white text-emerald-700 border border-emerald-100'} select-none`;
-
-            // Correction Tooltip - FIX: Only show if valid content
-            let tooltipContent = "";
-            if (ing.description && ing.description.trim().length > 0 && ing.description !== "No description available") {
-                tooltipContent += `<p class="mb-1">${ing.description}</p>`;
-            }
-            if (ing.flags && ing.flags.corrected) {
-                tooltipContent += `<span class="text-orange-500 text-[10px] uppercase tracking-wide border-t border-orange-200 mt-1 pt-1 block">Original: ${ing.original_name}</span>`;
-            }
-
-            let tooltipHtml = "";
-            if (tooltipContent) {
-                tooltipHtml = `<div class="tooltip-bubble">${tooltipContent}</div>`;
-            }
-
-            el.innerHTML = `${ing.name} ${tooltipHtml}`;
-            ingContainer.appendChild(el);
-        });
-    }
-} else {
-    console.warn("ingredientsContainer not found in DOM");
-}
+            // (Deleted garbage lines) else {
+            console.warn("ingredientsContainer not found in DOM");
+        }
     }
 
-const altContainer = document.getElementById('altContainer');
-if (altContainer && data.alternative) {
-    const amazonUrl = `https://www.amazon.com/s?k=${encodeURIComponent(data.alternative.brand + ' ' + data.alternative.name)}`;
-    const cleanName = encodeURIComponent(data.alternative.name + " " + data.alternative.brand + " product packaging");
-    const productImageUrl = `https://image.pollinations.ai/prompt/${cleanName}?width=300&height=300&nologo=true`;
+    const altContainer = document.getElementById('altContainer');
+    if (altContainer && data.alternative) {
+        const amazonUrl = `https://www.amazon.com/s?k=${encodeURIComponent(data.alternative.brand + ' ' + data.alternative.name)}`;
+        const cleanName = encodeURIComponent(data.alternative.name + " " + data.alternative.brand + " product packaging");
+        const productImageUrl = `https://image.pollinations.ai/prompt/${cleanName}?width=300&height=300&nologo=true`;
 
-    altContainer.innerHTML = `
+        altContainer.innerHTML = `
             <div class="glass-panel p-5 md:p-10 bg-gradient-to-r from-orange-50 to-amber-50 rounded-[2rem] md:rounded-[2.5rem] border border-orange-100 shadow-xl mt-6 md:mt-8">
                 <div class="flex items-center gap-4 mb-8">
                      <div class="p-2 bg-white text-orange-600 rounded-xl shadow-sm">
@@ -584,9 +563,9 @@ if (altContainer && data.alternative) {
                 </div>
             </div>
         `;
-}
+    }
 
-if (resultsContainer) {
-    resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
+    if (resultsContainer) {
+        resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
 }
