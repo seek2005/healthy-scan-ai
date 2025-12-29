@@ -43,9 +43,12 @@ function detectHarmfulIngredients(text) {
 }
 
 exports.analyzeImage = async (req, res) => {
+    // Generate Request ID for consistency check (Client-side anti-caching)
+    const requestId = global.crypto ? global.crypto.randomUUID() : Date.now().toString();
+
     try {
         const { image, mimeType, userProfile } = req.body;
-        if (!image) return res.status(400).json({ error: 'No image provided' });
+        if (!image) return res.status(400).json({ error: 'No image provided', requestId });
 
         // Build the prompt: ask for product name, brand and category plus nutrient values.
         const prompt = `You are a nutrition data extraction AI. Extract data from this nutrition label image exactly as requested.
@@ -68,8 +71,14 @@ CRITICAL: Return ONLY raw JSON. No introductory text. No markdown.
    - **PROTEIN**: "Protein" per serving.
 
 3. EXTRACT INGREDIENTS & ALLERGENS:
-   - **Ingredients**: List all ingredients. Mark 'is_harmful = true' for artificial colours (Yellow 5/6, Red 40), flavour enhancers (monosodium glutamate, disodium inosinate, disodium guanylate), and anything labelled "artificial flavour" or "natural & artificial flavour".
+   - **Visibility Check**: First, determine if an ingredients list is visible in the image.
+   - **ingredients_status**: Set to one of:
+       - "FOUND": Ingredients list is visible and readable.
+       - "NOT_IN_IMAGE": Image contains Nutrition Facts or product info, but NO ingredients list text is visible.
+       - "OCR_FAILED": Ingredients section appears to be present but is too blurry/cutoff to read.
+   - **Ingredients**: List all ingredients ONLY if status is "FOUND". Mark 'is_harmful = true' for known additives.
    - **Allergens**: List declared allergens.
+   - **Ingredients Text**: Extract the full raw text block of ingredients as a string.
 
 JSON OUTPUT FORMAT:
 {
@@ -77,6 +86,8 @@ JSON OUTPUT FORMAT:
   "brand": "string",
   "category": "string",
   "category_confidence": number,
+  "ingredients_status": "FOUND" | "NOT_IN_IMAGE" | "OCR_FAILED",
+  "ingredients_text": "string",
   "extracted_nutrients": {
     "serving_size_g": number,
     "energy_kcal": number,
@@ -111,6 +122,17 @@ JSON OUTPUT FORMAT:
         data.product_name = data.product_name || 'Unknown Product';
         data.brand = data.brand || '';
         data.category = data.category || 'other';
+        data.requestId = requestId; // Attach ID
+
+        // CLEAN & NORMALIZE INGREDIENTS (Remove OCR artifacts, dedupe, fix typos)
+        if (data.ingredients_list && Array.isArray(data.ingredients_list)) {
+            console.log(`[AnalyzeImage] Cleaning ingredients request=${requestId}...`);
+            // Pass raw ingredients text for Evidence Gating
+            const rawText = data.ingredients_text || "";
+            const { ingredients_list_clean, ingredients_dropped } = cleanIngredients(data.ingredients_list, rawText);
+            data.ingredients_list = ingredients_list_clean;
+            data.ingredients_dropped = ingredients_dropped;
+        }
 
         let yukaResult = { overall: 0, label: 'Unknown', subscores: {} };
 
@@ -129,12 +151,11 @@ JSON OUTPUT FORMAT:
             };
             // Create product object for Yuka scoring
 
-            // Post-process ingredients to ensure harmful ones are caught even if AI misses them
+            // Post-process additives mapping
             if (data.ingredients_list) {
+                // Ensure harmful ingredients are explicitly flagged (Redundant if cleaner works, but safe)
                 data.ingredients_list.forEach(ing => {
-                    if (detectHarmfulIngredients(ing.name)) {
-                        ing.is_harmful = true; // Force flag
-                    }
+                    if (detectHarmfulIngredients(ing.name)) ing.is_harmful = true;
                 });
             }
 
