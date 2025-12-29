@@ -460,13 +460,21 @@ export function displayResults(data) {
         if (data.ingredients_list) {
             data.ingredients_list.forEach(ing => {
                 const el = document.createElement('div');
-                el.className = `group relative px-3 py-1 md:px-4 md:py-2 rounded-full text-[10px] md:text-xs font-bold flex items-center gap-1 cursor-help transition-all hover:scale-105 shadow-sm hover:shadow-md ${ing.is_harmful ? 'bg-red-100 text-red-700 border border-red-200' : 'bg-white text-emerald-700 border border-emerald-100'}`;
+                const isHarmful = ing.is_harmful;
+                el.className = `group relative px-3 py-1 md:px-4 md:py-2 rounded-full text-[10px] md:text-xs font-bold flex items-center gap-1 cursor-help transition-all hover:scale-105 shadow-sm hover:shadow-md ${isHarmful ? 'bg-red-100 text-red-700 border border-red-200' : 'bg-white text-emerald-700 border border-emerald-100'}`;
+
+                // Correction Tooltip
+                let tooltipContent = ing.description || "No description available";
+                if (ing.flags && ing.flags.corrected) {
+                    tooltipContent += `<br><span class="text-orange-500 text-[10px] uppercase tracking-wide border-t border-orange-200 mt-1 pt-1 block">Original: ${ing.original_name}</span>`;
+                }
+
                 el.innerHTML = `
                     ${ing.name}
-<div class="tooltip-bubble">
-    ${ing.description || "No description available"}
-</div>
-`;
+                    <div class="tooltip-bubble">
+                        ${tooltipContent}
+                    </div>
+                `;
                 ingContainer.appendChild(el);
             });
         }
