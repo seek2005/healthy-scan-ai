@@ -1,5 +1,6 @@
 const { generateContentWithFallback, cleanJSON } = require('../services/gemini.service');
 const { calculatePortionAnalysis } = require('../utils/nutrition.utils');
+const { cleanIngredients } = require('../utils/ingredients.utils');
 const fetch = require('node-fetch');
 const YukaScore = require('../utils/score_yuka.server');
 
