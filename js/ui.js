@@ -163,27 +163,49 @@ export function displayResults(data) {
                 aiFactor = 100 / ext.serving_size_g;
             }
 
-            const mappedNutrients = {
-                energy_kcal: n.energy_kcal ?? (ext.energy_kcal ? ext.energy_kcal * aiFactor : 0),
-                sugars_g: n.sugars_g ?? (ext.sugar_g ? ext.sugar_g * aiFactor : 0),
-                saturated_fat_g: n.saturated_fat_g ?? (ext.sat_fat_g ? ext.sat_fat_g * aiFactor : 0),
-                sodium_mg: n.sodium_mg ?? (ext.sodium_mg ? ext.sodium_mg * aiFactor : 0),
-                fiber_g: n.fiber_g ?? (ext.fiber_g ? ext.fiber_g * aiFactor : 0),
-                protein_g: n.protein_g ?? (ext.protein_g ? ext.protein_g * aiFactor : 0)
-            };
+            // 1. Determine Nutrients Basis (Prioritize per100g > FastBarcode > AI Extracted)
+            let mappedNutrients = {};
+            if (data.nutrients_100g) {
+                // Backend provided per-100g (Best)
+                mappedNutrients = {
+                    energy_kcal: data.nutrients_100g.energy_kcal || 0,
+                    sugars_g: data.nutrients_100g.sugars_g || 0,
+                    saturated_fat_g: data.nutrients_100g.saturated_fat_g || 0,
+                    sodium_mg: data.nutrients_100g.sodium_mg || 0,
+                    fiber_g: data.nutrients_100g.fiber_g || 0,
+                    protein_g: data.nutrients_100g.protein_g || 0
+                };
+            } else {
+                // Fallback: Use FastBarcode raw or AI extracted (scaled)
+                mappedNutrients = {
+                    energy_kcal: n.energy_kcal ?? (ext.energy_kcal ? ext.energy_kcal * aiFactor : 0),
+                    sugars_g: n.sugars_g ?? (ext.sugar_g ? ext.sugar_g * aiFactor : 0),
+                    saturated_fat_g: n.saturated_fat_g ?? (ext.sat_fat_g ? ext.sat_fat_g * aiFactor : 0),
+                    sodium_mg: n.sodium_mg ?? (ext.sodium_mg ? ext.sodium_mg * aiFactor : 0),
+                    fiber_g: n.fiber_g ?? (ext.fiber_g ? ext.fiber_g * aiFactor : 0),
+                    protein_g: n.protein_g ?? (ext.protein_g ? ext.protein_g * aiFactor : 0)
+                };
+            }
+
+            // 2. Build Yuka Product Helper
+            // FIX: Additives empty array truthiness bug
+            const explicitAdditives = (data.additives && data.additives.length > 0) ? data.additives : null;
+            const derivedAdditives = explicitAdditives || (data.ingredients_list || [])
+                .filter(i => i.is_harmful)
+                .map(i => ({ risk: "high", name: i.name }));
 
             const yukaProduct = {
                 name: data.name || "Product",
                 category: data.category || "foods",
                 nutrients_basis: "per100g",
-                serving_size_gml: data.extracted_nutrients?.serving_size_g || 100,
+                serving_size_gml: 100, // Normalized above
                 nutrients: mappedNutrients,
-                additives: data.additives
-                    ? data.additives
-                    : (data.ingredients_list || []).filter(i => i.is_harmful).map(i => ({ risk: "high" })),
+                additives: derivedAdditives,
                 organic: data.organic !== undefined ? data.organic : (data.suitability_tags || []).includes("Organic")
             };
 
+            // ... (Portion Analysis Logic skipped for brevity, keeping existing if possible or re-adding it? I must replace contiguous block)
+            // Re-adding Portion Analysis Logic to be safe
             if (!data.portion_analysis && yukaProduct.nutrients) {
                 const s = yukaProduct.nutrients.sugars_g || 0;
                 const sod = yukaProduct.nutrients.sodium_mg || 0;
@@ -207,6 +229,7 @@ export function displayResults(data) {
                 };
             }
 
+            // 3. POLYFILL UPF & INGREDIENTS (Keep existing logic)
             const UPF_KEYWORDS = [/maltodextrin/i, /corn syrup/i, /high fructose/i, /dextrose/i, /hydrogenated/i, /artificial/i, /color/i, /lake/i, /glutamate/i, /disodium/i, /benzoate/i, /yellow 5/i, /yellow 6/i, /red 40/i, /blue 1/i];
 
             if ((!data.ingredients_list || data.ingredients_list.length === 0) && data.ingredients_text) {
@@ -225,8 +248,16 @@ export function displayResults(data) {
                     });
             }
 
-            const score = data.health_score ?? window.YukaScore.compute(yukaProduct).overall;
-            const scoreLabel = data.score_label ?? (score >= 75 ? "Excellent" : score >= 50 ? "Good" : score >= 25 ? "Mediocre" : "Bad");
+            // 4. COMPUTE SCORE (Prioritize Backend Trace > Local Compute)
+            // IGNORE data.health_score for display to prevent AI hallucinations
+            const breakdown = data.yuka_breakdown || window.YukaScore.compute(yukaProduct);
+            const score = breakdown.overall;
+            const scoreLabel = breakdown.label;
+
+            // Debug Warning
+            if (data.health_score && Math.abs(data.health_score - score) > 10) {
+                console.warn(`[Scoring Mismatch] AI:${data.health_score} vs Calc:${score}. Showing Calc.`, yukaProduct);
+            }
 
             if (!data.alternative && score < 50) {
                 const cat = data.category ? data.category.split(',')[0] : "Snack";
